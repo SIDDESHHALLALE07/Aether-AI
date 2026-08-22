@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import String, Text, ForeignKey, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import Optional
 from app.core.base import Base
@@ -31,3 +31,5 @@ class Embedding(Base):
     content_chunk: Mapped[str] = mapped_column(Text, nullable=False)
     embedding_data: Mapped[Optional[str]] = mapped_column(VectorType, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    version: Mapped[Optional["DatasetVersion"]] = relationship("DatasetVersion", back_populates="embeddings")

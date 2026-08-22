@@ -24,6 +24,8 @@ class Dataset(Base, TimestampMixin):
     project: Mapped["Project"] = relationship("Project", back_populates="datasets")
     user: Mapped["User"] = relationship("User", back_populates="datasets")
     versions: Mapped[List["DatasetVersion"]] = relationship("DatasetVersion", back_populates="dataset", cascade="all, delete-orphan")
+    conversations: Mapped[List["Conversation"]] = relationship("Conversation", back_populates="dataset", cascade="all, delete-orphan")
+    cleaning_operations: Mapped[List["CleaningOperation"]] = relationship("CleaningOperation", back_populates="dataset", cascade="all, delete-orphan")
 
 class DatasetVersion(Base):
     __tablename__ = "dataset_versions"
@@ -40,3 +42,7 @@ class DatasetVersion(Base):
     dataset: Mapped["Dataset"] = relationship("Dataset", back_populates="versions")
     profile: Mapped[Optional["DataProfile"]] = relationship("DataProfile", back_populates="version", uselist=False, cascade="all, delete-orphan")
     quality_score: Mapped[Optional["QualityScore"]] = relationship("QualityScore", back_populates="version", uselist=False, cascade="all, delete-orphan")
+    patterns: Mapped[List["PatternResult"]] = relationship("PatternResult", back_populates="version", cascade="all, delete-orphan")
+    insights: Mapped[List["Insight"]] = relationship("Insight", back_populates="version", cascade="all, delete-orphan")
+    reports: Mapped[List["Report"]] = relationship("Report", back_populates="version", cascade="all, delete-orphan")
+    embeddings: Mapped[List["Embedding"]] = relationship("Embedding", back_populates="version", cascade="all, delete-orphan")

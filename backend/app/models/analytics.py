@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import String, Text, Float, ForeignKey, JSON, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import Optional
 from app.core.base import Base
@@ -19,6 +19,8 @@ class PatternResult(Base):
     evidence: Mapped[dict] = mapped_column(JSON, nullable=False)
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    version: Mapped["DatasetVersion"] = relationship("DatasetVersion", back_populates="patterns")
 
 class Insight(Base):
     __tablename__ = "insights"
@@ -32,3 +34,5 @@ class Insight(Base):
     ai_interpretation: Mapped[str] = mapped_column(Text, nullable=False)
     confidence_score: Mapped[float] = mapped_column(Float, default=1.0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    version: Mapped["DatasetVersion"] = relationship("DatasetVersion", back_populates="insights")

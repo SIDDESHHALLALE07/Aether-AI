@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import String, Integer, ForeignKey, JSON, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import Optional
 from app.core.base import Base
@@ -19,3 +19,5 @@ class CleaningOperation(Base):
     parameters: Mapped[dict] = mapped_column(JSON, nullable=False)
     affected_rows_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    dataset: Mapped["Dataset"] = relationship("Dataset", back_populates="cleaning_operations")

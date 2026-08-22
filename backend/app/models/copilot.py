@@ -16,6 +16,7 @@ class Conversation(Base, TimestampMixin):
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
+    dataset: Mapped["Dataset"] = relationship("Dataset", back_populates="conversations")
     messages: Mapped[List["Message"]] = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
 
 class Message(Base):
