@@ -24,7 +24,7 @@ For each milestone, implementation adheres to:
 | **M5** | API Layer | Core REST endpoints (`/api/v1/*`), OpenAPI documentation | Swagger UI interactive test clean | ✅ Verified |
 | **M6** | Auth & Security | JWT auth, bcrypt password hashing, workspace isolation, rate limiting | Register, login, protected route test | ✅ Verified |
 | **M7** | Dataset Management | CSV/XLSX file upload, file validation, storage drivers (R2/Local), pagination | Upload & preview functional | ✅ Verified |
-| **M8** | Profiling & Quality | Automated dataset profiling, 0-100 Data Quality Score algorithm | Profile metrics & score verified | ⏳ Pending |
+| **M8** | Profiling & Quality | Automated dataset profiling, 0-100 Data Quality Score algorithm | Profile metrics & score verified | ✅ Verified |
 | **M9** | Smart Cleaning | Non-destructive dataset versioning (`V1 -> V2`), cleaning operations, rollback | Version rollback & cleaning verified | ⏳ Pending |
 | **M10** | Analytics Engine | Pandas statistical aggregation, group-by, mean/median/percentiles, correlation | Math calculations verified | ⏳ Pending |
 | **M11** | Visualization Engine | Interactive Plotly.js charts, chart recommendations | Charts render dynamically | ⏳ Pending |

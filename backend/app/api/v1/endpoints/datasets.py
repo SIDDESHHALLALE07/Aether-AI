@@ -157,3 +157,89 @@ def get_dataset_preview(
         },
         "error": None
     }
+
+@router.get("/{dataset_id}/profile", response_model=ApiResponse[DataProfileResponse])
+def get_dataset_profile(
+    dataset_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.data_processing.profiler import profile_dataset
+    from app.models.profile import DataProfile
+    
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+        
+    version = db.query(DatasetVersion).filter(
+        DatasetVersion.dataset_id == dataset_id,
+        DatasetVersion.version_number == dataset.current_version_num
+    ).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Dataset version not found")
+
+    profile = db.query(DataProfile).filter(DataProfile.dataset_version_id == version.id).first()
+    if not profile:
+        df = load_dataframe(version.storage_path, dataset.file_type)
+        num_sum, cat_sum, dt_sum, dtypes = profile_dataset(df)
+        
+        profile = DataProfile(
+            dataset_version_id=version.id,
+            numeric_summary=num_sum,
+            categorical_summary=cat_sum,
+            datetime_summary=dt_sum,
+            data_types=dtypes
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+
+    return {
+        "success": True,
+        "data": profile,
+        "error": None
+    }
+
+@router.get("/{dataset_id}/quality", response_model=ApiResponse[QualityScoreResponse])
+def get_dataset_quality(
+    dataset_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.data_processing.quality import calculate_quality_score
+    from app.models.profile import QualityScore
+
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    version = db.query(DatasetVersion).filter(
+        DatasetVersion.dataset_id == dataset_id,
+        DatasetVersion.version_number == dataset.current_version_num
+    ).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Dataset version not found")
+
+    quality = db.query(QualityScore).filter(QualityScore.dataset_version_id == version.id).first()
+    if not quality:
+        df = load_dataframe(version.storage_path, dataset.file_type)
+        overall, comp, uniq, val, cons, issues = calculate_quality_score(df)
+        
+        quality = QualityScore(
+            dataset_version_id=version.id,
+            overall_score=overall,
+            completeness_score=comp,
+            uniqueness_score=uniq,
+            validity_score=val,
+            consistency_score=cons,
+            detected_issues=issues
+        )
+        db.add(quality)
+        db.commit()
+        db.refresh(quality)
+
+    return {
+        "success": True,
+        "data": quality,
+        "error": None
+    }
