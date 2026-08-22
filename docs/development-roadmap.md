@@ -28,7 +28,7 @@ For each milestone, implementation adheres to:
 | **M9** | Smart Cleaning | Non-destructive dataset versioning (`V1 -> V2`), cleaning operations, rollback | Version rollback & cleaning verified | ✅ Verified |
 | **M10** | Analytics Engine | Pandas statistical aggregation, group-by, mean/median/percentiles, correlation | Math calculations verified | ✅ Verified |
 | **M11** | Visualization Engine | Interactive Plotly.js charts, chart recommendations | Charts render dynamically | ✅ Verified |
-| **M12** | Pattern Discovery | Pearson/Spearman correlation, IQR/Z-score/Isolation Forest anomalies, K-Means | Patterns detected with evidence | ⏳ Pending |
+| **M12** | Pattern Discovery | Pearson/Spearman correlation, IQR/Z-score/Isolation Forest anomalies, K-Means | Patterns detected with evidence | ✅ Verified |
 | **M13** | Gemini AI Copilot | Backend proxy for Gemini 1.5 Flash, evidence-grounded prompt templates | Q&A grounded in math evidence | ⏳ Pending |
 | **M14** | `pgvector` RAG | Embedding storage & vector similarity search | Context retrieved for copilot | ⏳ Pending |
 | **M15** | AI Insights Engine | Automated insight generation separating computed evidence vs AI explanation | Cards rendering evidence & text | ⏳ Pending |
