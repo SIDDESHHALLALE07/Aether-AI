@@ -38,7 +38,7 @@ Aether Copilot AI is an enterprise-grade, spatial AI-powered data analytics plat
 | **Milestone 4** | Backend Foundation (FastAPI modular monolith) | ✅ Verified |
 | **Milestone 5** | REST API Layer & Schemas | ✅ Verified |
 | **Milestone 6** | Authentication & Security (JWT, bcrypt, isolation) | ✅ Verified |
-| **Milestone 7** | Dataset Management & Storage | ⏳ Pending |
+| **Milestone 7** | Dataset Management & Storage | ✅ Verified |
 | **Milestone 8** | Data Profiling & Quality Engine | ⏳ Pending |
 | **Milestone 9** | Smart Cleaning & Versioning Engine | ⏳ Pending |
 | **Milestone 10** | Analytics & Aggregation Engine | ⏳ Pending |
