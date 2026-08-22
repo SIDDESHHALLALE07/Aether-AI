@@ -26,7 +26,7 @@ For each milestone, implementation adheres to:
 | **M7** | Dataset Management | CSV/XLSX file upload, file validation, storage drivers (R2/Local), pagination | Upload & preview functional | ✅ Verified |
 | **M8** | Profiling & Quality | Automated dataset profiling, 0-100 Data Quality Score algorithm | Profile metrics & score verified | ✅ Verified |
 | **M9** | Smart Cleaning | Non-destructive dataset versioning (`V1 -> V2`), cleaning operations, rollback | Version rollback & cleaning verified | ✅ Verified |
-| **M10** | Analytics Engine | Pandas statistical aggregation, group-by, mean/median/percentiles, correlation | Math calculations verified | ⏳ Pending |
+| **M10** | Analytics Engine | Pandas statistical aggregation, group-by, mean/median/percentiles, correlation | Math calculations verified | ✅ Verified |
 | **M11** | Visualization Engine | Interactive Plotly.js charts, chart recommendations | Charts render dynamically | ⏳ Pending |
 | **M12** | Pattern Discovery | Pearson/Spearman correlation, IQR/Z-score/Isolation Forest anomalies, K-Means | Patterns detected with evidence | ⏳ Pending |
 | **M13** | Gemini AI Copilot | Backend proxy for Gemini 1.5 Flash, evidence-grounded prompt templates | Q&A grounded in math evidence | ⏳ Pending |
