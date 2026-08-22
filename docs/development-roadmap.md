@@ -19,7 +19,7 @@ For each milestone, implementation adheres to:
 | **M0** | Planning & Architecture | System design, PRD, API specs, database schema, security & AI architecture docs | Complete docs in `docs/` and root `README.md` | ✅ Verified |
 | **M1** | Frontend Foundation | Vite, React 18, TypeScript, Tailwind CSS, App Shell, Routing, Themes | Clean build, responsive shell | ✅ Verified |
 | **M2** | Spatial UI Interface | React Flow (`@xyflow/react`) workspace, interactive connected nodes, pan/zoom | Working canvas with functional nodes | ✅ Verified |
-| **M3** | Database Setup | SQLAlchemy models, Supabase PostgreSQL, Alembic migrations, pgvector extension | Database tables & vector indexes created | ⏳ Pending |
+| **M3** | Database Setup | SQLAlchemy models, Supabase PostgreSQL, Alembic migrations, pgvector extension | Database tables & vector indexes created | ✅ Verified |
 | **M4** | Backend Foundation | FastAPI modular monolith architecture, Pydantic v2 schemas, CORS, Uvicorn | Server running on http://localhost:8000 | ⏳ Pending |
 | **M5** | API Layer | Core REST endpoints (`/api/v1/*`), OpenAPI documentation | Swagger UI interactive test clean | ⏳ Pending |
 | **M6** | Auth & Security | JWT auth, bcrypt password hashing, workspace isolation, rate limiting | Register, login, protected route test | ⏳ Pending |
