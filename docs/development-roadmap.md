@@ -30,7 +30,7 @@ For each milestone, implementation adheres to:
 | **M11** | Visualization Engine | Interactive Plotly.js charts, chart recommendations | Charts render dynamically | ✅ Verified |
 | **M12** | Pattern Discovery | Pearson/Spearman correlation, IQR/Z-score/Isolation Forest anomalies, K-Means | Patterns detected with evidence | ✅ Verified |
 | **M13** | Gemini AI Copilot | Backend proxy for Gemini 1.5 Flash, evidence-grounded prompt templates | Q&A grounded in math evidence | ✅ Verified |
-| **M14** | `pgvector` RAG | Embedding storage & vector similarity search | Context retrieved for copilot | ⏳ Pending |
+| **M14** | `pgvector` RAG | Embedding storage & vector similarity search | Context retrieved for copilot | ✅ Verified |
 | **M15** | AI Insights Engine | Automated insight generation separating computed evidence vs AI explanation | Cards rendering evidence & text | ⏳ Pending |
 | **M16** | Reports & Exports | PDF executive report generator, formula injection safe CSV/Excel exports | PDF download & safe exports verified | ⏳ Pending |
 | **M17** | Security Audit | Vulnerability scanning, prompt injection defense test, permission boundaries | Zero high severity issues | ⏳ Pending |
