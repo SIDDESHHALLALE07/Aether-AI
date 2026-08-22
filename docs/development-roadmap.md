@@ -22,7 +22,7 @@ For each milestone, implementation adheres to:
 | **M3** | Database Setup | SQLAlchemy models, Supabase PostgreSQL, Alembic migrations, pgvector extension | Database tables & vector indexes created | ✅ Verified |
 | **M4** | Backend Foundation | FastAPI modular monolith architecture, Pydantic v2 schemas, CORS, Uvicorn | Server running on http://localhost:8000 | ✅ Verified |
 | **M5** | API Layer | Core REST endpoints (`/api/v1/*`), OpenAPI documentation | Swagger UI interactive test clean | ✅ Verified |
-| **M6** | Auth & Security | JWT auth, bcrypt password hashing, workspace isolation, rate limiting | Register, login, protected route test | ⏳ Pending |
+| **M6** | Auth & Security | JWT auth, bcrypt password hashing, workspace isolation, rate limiting | Register, login, protected route test | ✅ Verified |
 | **M7** | Dataset Management | CSV/XLSX file upload, file validation, storage drivers (R2/Local), pagination | Upload & preview functional | ⏳ Pending |
 | **M8** | Profiling & Quality | Automated dataset profiling, 0-100 Data Quality Score algorithm | Profile metrics & score verified | ⏳ Pending |
 | **M9** | Smart Cleaning | Non-destructive dataset versioning (`V1 -> V2`), cleaning operations, rollback | Version rollback & cleaning verified | ⏳ Pending |
