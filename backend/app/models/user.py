@@ -1,9 +1,14 @@
+from __future__ import annotations
 import uuid
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from app.core.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.dataset import Dataset
 
 def generate_uuid():
     return str(uuid.uuid4())
@@ -19,8 +24,6 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
     # Relationships
-    projects: Mapped[List["Project"]] = relationship("Project", back_populates="user", cascade="all, delete-orphan")
-    datasets: Mapped[List["Dataset"]] = relationship("Dataset", back_populates="user", cascade="all, delete-orphan")
     sessions: Mapped[List["UserSession"]] = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
 
 class UserSession(Base):

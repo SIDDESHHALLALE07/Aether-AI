@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, ArrowRight, Sparkles } from 'lucide-react';
+import { X, ArrowRight } from 'lucide-react';
+import { useWorkspaceStore } from '../../stores/useWorkspaceStore';
 
 interface NodeContextPanelProps {
   nodeId: string | null;
@@ -9,6 +10,7 @@ interface NodeContextPanelProps {
 }
 
 export const NodeContextPanel: React.FC<NodeContextPanelProps> = ({ nodeId, nodeData, onClose }) => {
+  const { activeDataset } = useWorkspaceStore();
   if (!nodeId || !nodeData) return null;
 
   const getRouteLink = (category: string) => {
@@ -27,52 +29,46 @@ export const NodeContextPanel: React.FC<NodeContextPanelProps> = ({ nodeId, node
   };
 
   return (
-    <div className="absolute right-4 top-16 bottom-4 w-96 rounded-2xl bg-[#111827]/95 border border-white/10 backdrop-blur-xl shadow-2xl z-50 flex flex-col justify-between p-6 animate-in slide-in-from-right duration-200">
-      <div>
-        {/* Panel Header */}
-        <div className="flex justify-between items-center pb-4 border-b border-white/10 mb-4">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">{nodeData.label} Node Details</span>
-          </div>
+    <div className="fixed inset-x-3 bottom-3 max-h-[75vh] sm:fixed sm:inset-auto sm:right-4 sm:top-20 sm:bottom-4 sm:w-80 md:w-84 rounded-xl bg-white border border-[#E2E8F0] shadow-xl z-50 flex flex-col justify-between p-4 text-xs overflow-hidden">
+      <div className="space-y-3 overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center pb-2 border-b border-[#F1F5F9]">
+          <span className="font-semibold text-xs text-[#0F172A] uppercase tracking-wider">{nodeData.label}</span>
           <button 
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1 rounded text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition-colors touch-manipulation"
+            aria-label="Close context panel"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Node Overview Card */}
-        <div className="p-4 rounded-xl bg-white/5 border border-white/5 mb-4">
-          <span className="text-[10px] text-gray-400 font-semibold block uppercase">Active Status</span>
-          <p className="text-sm font-bold text-white mt-0.5">{nodeData.status}</p>
+        {/* Node Overview */}
+        <div className="p-3 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] space-y-1">
+          <span className="text-[10px] text-[#64748B] font-medium uppercase block">Status</span>
+          <p className="font-semibold text-[#0F172A] break-words">{nodeData.status}</p>
           {nodeData.metrics && (
-            <p className="text-xs text-cyan-300 font-mono mt-1">{nodeData.metrics}</p>
+            <p className="text-[11px] text-[#64748B]">{nodeData.metrics}</p>
           )}
         </div>
 
-        {/* Quick Context Details */}
-        <div className="space-y-3">
-          <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-            <span className="text-[11px] font-semibold text-gray-300 block mb-1">Canvas Node Position</span>
-            <p className="text-xs text-gray-400">Node ID: <code className="text-indigo-300">{nodeId}</code></p>
-          </div>
-          <div className="p-3 rounded-lg bg-white/5 border border-white/5">
-            <span className="text-[11px] font-semibold text-gray-300 block mb-1">Associated Dataset</span>
-            <p className="text-xs text-gray-400">customer_churn_analysis.csv (V2)</p>
-          </div>
+        {/* Dataset */}
+        <div className="p-3 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] space-y-1">
+          <span className="text-[10px] text-[#64748B] font-medium uppercase block">Dataset</span>
+          <p className="text-[#0F172A] truncate" title={activeDataset ? `${activeDataset.original_filename} (v${activeDataset.current_version_num})` : 'None'}>
+            {activeDataset ? `${activeDataset.original_filename} (v${activeDataset.current_version_num})` : 'None'}
+          </p>
         </div>
       </div>
 
       {/* Action Footer */}
-      <div className="pt-4 border-t border-white/10">
+      <div className="pt-3 border-t border-[#F1F5F9] mt-3">
         <Link
           to={getRouteLink(nodeData.category)}
-          className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 text-white font-semibold text-xs py-3 rounded-xl shadow-lg shadow-indigo-600/30 transition-all"
+          className="w-full flex items-center justify-center space-x-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-medium text-xs py-2.5 rounded-md transition-colors touch-manipulation"
         >
-          <span>Open Full {nodeData.label} View</span>
-          <ArrowRight className="w-4 h-4" />
+          <span>Open {nodeData.label}</span>
+          <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
     </div>

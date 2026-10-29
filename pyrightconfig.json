@@ -1,0 +1,30 @@
+{
+  "include": [
+    "backend"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/__pyrefly__",
+    "**/__pyrefly__/**",
+    "**/__pyrefly_virtual__",
+    "**/__pyrefly_virtual__/**",
+    "**/__vmemory",
+    "**/__vmemory/**",
+    "**/.venv",
+    "**/node_modules",
+    "**/dist",
+    "**/build",
+    "**/.pytest_cache",
+    "C:/__pyrefly__",
+    "C:/__pyrefly__/**",
+    "C:/__pyrefly_virtual__",
+    "C:/__pyrefly_virtual__/**",
+    "C:/__vmemory",
+    "C:/__vmemory/**"
+  ],
+  "extraPaths": [
+    "backend",
+    "C:/Users/SIDDESH/AppData/Local/Programs/Python/Python314/Lib/site-packages"
+  ],
+  "pythonPath": "C:/Users/SIDDESH/AppData/Local/Programs/Python/Python314/python.exe"
+}

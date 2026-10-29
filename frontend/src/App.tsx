@@ -1,22 +1,22 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes } from './routes/AppRoutes';
-import { useThemeStore } from './stores/useThemeStore';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+// Aether uses a permanent light theme.
+// The .dark class is unconditionally removed on every render.
 
 export const App: React.FC = () => {
-  const { theme } = useThemeStore();
-
   useEffect(() => {
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
+    // Permanently ensure light theme — remove any residual .dark class
+    document.documentElement.classList.remove('dark');
+  }, []);
 
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
     </BrowserRouter>
   );
 };

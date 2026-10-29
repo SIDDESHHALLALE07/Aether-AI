@@ -1,9 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
-import { LandingPage } from '../pages/LandingPage';
-import { LoginPage } from '../pages/LoginPage';
-import { RegisterPage } from '../pages/RegisterPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { WorkspacePage } from '../pages/WorkspacePage';
 import { ProjectsPage } from '../pages/ProjectsPage';
@@ -21,13 +18,10 @@ import { SettingsPage } from '../pages/SettingsPage';
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Public Pages */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-
-      {/* Authenticated Application Shell */}
+      {/* Main Application Shell - Directly Accessible without Auth */}
       <Route element={<AppLayout />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/overview" element={<DashboardPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/workspace" element={<WorkspacePage />} />
         <Route path="/projects" element={<ProjectsPage />} />
@@ -38,12 +32,17 @@ export const AppRoutes: React.FC = () => {
         <Route path="/visualizations" element={<VisualizationsPage />} />
         <Route path="/patterns" element={<PatternsPage />} />
         <Route path="/copilot" element={<CopilotPage />} />
+        <Route path="/ai-copilot" element={<CopilotPage />} />
         <Route path="/insights" element={<InsightsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
-      {/* Fallback */}
+      {/* Redirect any legacy auth endpoints to main application */}
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/register" element={<Navigate to="/" replace />} />
+
+      {/* Fallback to Dashboard */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

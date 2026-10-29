@@ -19,12 +19,12 @@ def calculate_quality_score(df: pd.DataFrame) -> Tuple[float, float, float, floa
     invalid_cells = 0
     for col in df.columns:
         s = df[col].astype(str).str.strip()
-        invalid_cells += int((s == "").sum() + (s.str.lower() == "nan").sum() + (s.str.lower() == "null").sum() + (s.str.lower() == "n/a").sum())
+        invalid_cells += (s == "").sum() + (s.str.lower() == "nan").sum() + (s.str.lower() == "null").sum() + (s.str.lower() == "n/a").sum()
     validity_score = max(0.0, min(100.0, round((1.0 - (invalid_cells / total_cells)) * 100, 2)))
     
     # 4. Consistency Score (20% Weight) - Outliers via IQR
     outlier_cells = 0
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    numeric_cols = df.select_dtypes(include="number").columns
     for col in numeric_cols:
         clean_s = df[col].dropna()
         if len(clean_s) > 4:

@@ -3,8 +3,10 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 class ChatRequest(BaseModel):
-    dataset_id: str
     message: str
+    dataset_id: Optional[str] = None
+    project_id: Optional[str] = None
+    conversation_id: Optional[str] = None
 
 class MessageResponse(BaseModel):
     id: str
@@ -16,13 +18,36 @@ class MessageResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
+class ConversationSummaryResponse(BaseModel):
+    id: str
+    user_id: str
+    dataset_id: Optional[str] = None
+    project_id: Optional[str] = None
+    dataset_name: Optional[str] = None
+    title: Optional[str] = None
+    last_message: Optional[str] = None
+    message_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 class ConversationResponse(BaseModel):
     id: str
-    dataset_id: str
     user_id: str
+    dataset_id: Optional[str] = None
+    project_id: Optional[str] = None
     title: Optional[str] = None
     messages: List[MessageResponse] = []
     created_at: datetime
     updated_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+class ConversationCreate(BaseModel):
+    title: Optional[str] = None
+    dataset_id: Optional[str] = None
+    project_id: Optional[str] = None
+
+class ConversationUpdate(BaseModel):
+    title: str

@@ -8,8 +8,6 @@ from typing import List
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
 from app.models.dataset import Dataset, DatasetVersion
 from app.models.cleaning import CleaningOperation
 from app.schemas.common import ApiResponse
@@ -23,10 +21,9 @@ router = APIRouter()
 def apply_cleaning_operation(
     dataset_id: str,
     clean_in: CleaningRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -100,10 +97,9 @@ def apply_cleaning_operation(
 def rollback_dataset_version(
     dataset_id: str,
     target_version_num: int = Query(..., ge=1),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -127,3 +123,4 @@ def rollback_dataset_version(
         },
         "error": None
     }
+

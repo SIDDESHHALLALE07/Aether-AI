@@ -3,8 +3,6 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
 from app.models.dataset import Dataset, DatasetVersion
 from app.models.analytics import PatternResult
 from app.schemas.common import ApiResponse
@@ -17,10 +15,9 @@ router = APIRouter()
 @router.get("/{dataset_id}", response_model=ApiResponse[List[PatternResponse]])
 def get_patterns(
     dataset_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 

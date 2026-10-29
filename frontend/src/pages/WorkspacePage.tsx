@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   ReactFlow, 
   Background, 
@@ -14,92 +14,117 @@ import '@xyflow/react/dist/style.css';
 
 import { SpatialAnalyticsNode } from '../components/spatial/SpatialAnalyticsNode';
 import { NodeContextPanel } from '../components/spatial/NodeContextPanel';
-import { MapPin, RefreshCw } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/useWorkspaceStore';
+import { Link } from 'react-router-dom';
+import { api } from '../services/api';
 
 const nodeTypes = {
   spatialNode: SpatialAnalyticsNode,
 };
 
-const initialNodes: Node[] = [
+const createInitialNodes = (filename: string, version: number, qualityScore?: number | null, patternsCount = 0): Node[] => [
   {
     id: 'node-dataset',
     type: 'spatialNode',
     position: { x: 50, y: 150 },
-    data: { label: 'DATASET', category: 'dataset', status: 'customer_churn.csv', metrics: '10,500 rows • 12 cols (V2)' },
+    data: { label: 'DATASET', category: 'dataset', status: filename, metrics: `v${version}` },
   },
   {
     id: 'node-quality',
     type: 'spatialNode',
     position: { x: 340, y: 50 },
-    data: { label: 'DATA QUALITY', category: 'quality', status: 'Score: 94 / 100', metrics: 'Completeness: 96% • 0 Dups' },
+    data: { 
+      label: 'QUALITY', 
+      category: 'quality', 
+      status: qualityScore !== null && qualityScore !== undefined ? `${qualityScore}/100 Score` : 'Quality Check', 
+      metrics: qualityScore !== null && qualityScore !== undefined ? 'Verified' : 'Pending' 
+    },
   },
   {
     id: 'node-cleaning',
     type: 'spatialNode',
     position: { x: 340, y: 250 },
-    data: { label: 'CLEANING', category: 'cleaning', status: '2 Ops Applied', metrics: 'Imputed TotalCharges • V1 -> V2' },
+    data: { label: 'CLEANING', category: 'cleaning', status: 'Pipeline', metrics: 'Non-Destructive' },
   },
   {
     id: 'node-analytics',
     type: 'spatialNode',
     position: { x: 630, y: 150 },
-    data: { label: 'ANALYTICS', category: 'analytics', status: '12 Metrics Active', metrics: 'Mean Monthly: $64.76' },
+    data: { label: 'ANALYTICS', category: 'analytics', status: 'Descriptive Stats', metrics: 'Aggregations' },
   },
   {
     id: 'node-visualizations',
     type: 'spatialNode',
     position: { x: 920, y: 50 },
-    data: { label: 'VISUALIZATIONS', category: 'visualizations', status: '4 Charts Rendered', metrics: 'Scatter • Pie • Histogram' },
+    data: { label: 'VISUALIZATIONS', category: 'visualizations', status: 'Plotly Studio', metrics: 'Multi-Chart' },
   },
   {
     id: 'node-patterns',
     type: 'spatialNode',
     position: { x: 920, y: 250 },
-    data: { label: 'PATTERNS', category: 'patterns', status: '3 Patterns Found', metrics: 'Pearson r=0.826 • 3 Anomalies' },
+    data: { label: 'PATTERNS', category: 'patterns', status: `${patternsCount} Patterns`, metrics: 'Correlations' },
   },
   {
     id: 'node-copilot',
     type: 'spatialNode',
     position: { x: 1210, y: 150 },
-    data: { label: 'AI COPILOT', category: 'copilot', status: 'Context Grounded', metrics: 'Gemini 1.5 Flash Active' },
+    data: { label: 'AETHER AI', category: 'copilot', status: 'AI Assistant', metrics: 'Evidence Linked' },
   },
   {
     id: 'node-insights',
     type: 'spatialNode',
     position: { x: 1500, y: 50 },
-    data: { label: 'INSIGHTS', category: 'insights', status: '2 Insights Cards', metrics: '92% Confidence Score' },
+    data: { label: 'INSIGHTS', category: 'insights', status: 'Executive Insights', metrics: 'Actionable' },
   },
   {
     id: 'node-reports',
     type: 'spatialNode',
     position: { x: 1500, y: 250 },
-    data: { label: 'REPORTS', category: 'reports', status: 'PDF & CSV Ready', metrics: 'Sanitized Formula Protection' },
+    data: { label: 'REPORTS', category: 'reports', status: 'PDF Report', metrics: 'Ready' },
   },
 ];
 
 const initialEdges: Edge[] = [
-  { id: 'e-ds-qual', source: 'node-dataset', target: 'node-quality', animated: true, style: { stroke: '#6366F1' } },
-  { id: 'e-ds-clean', source: 'node-dataset', target: 'node-cleaning', animated: true, style: { stroke: '#6366F1' } },
-  { id: 'e-qual-analy', source: 'node-quality', target: 'node-analytics', animated: true, style: { stroke: '#06B6D4' } },
-  { id: 'e-clean-analy', source: 'node-cleaning', target: 'node-analytics', animated: true, style: { stroke: '#A855F7' } },
-  { id: 'e-analy-vis', source: 'node-analytics', target: 'node-visualizations', animated: true, style: { stroke: '#10B981' } },
-  { id: 'e-analy-patt', source: 'node-analytics', target: 'node-patterns', animated: true, style: { stroke: '#10B981' } },
-  { id: 'e-vis-copilot', source: 'node-visualizations', target: 'node-copilot', animated: true, style: { stroke: '#F59E0B' } },
-  { id: 'e-patt-copilot', source: 'node-patterns', target: 'node-copilot', animated: true, style: { stroke: '#F43F5E' } },
-  { id: 'e-copilot-ins', source: 'node-copilot', target: 'node-insights', animated: true, style: { stroke: '#818CF8' } },
-  { id: 'e-copilot-rep', source: 'node-copilot', target: 'node-reports', animated: true, style: { stroke: '#818CF8' } },
+  { id: 'e-ds-qual', source: 'node-dataset', target: 'node-quality', animated: true, style: { stroke: '#2563EB' } },
+  { id: 'e-ds-clean', source: 'node-dataset', target: 'node-cleaning', animated: true, style: { stroke: '#2563EB' } },
+  { id: 'e-qual-analy', source: 'node-quality', target: 'node-analytics', animated: true, style: { stroke: '#475569' } },
+  { id: 'e-clean-analy', source: 'node-cleaning', target: 'node-analytics', animated: true, style: { stroke: '#2563EB' } },
+  { id: 'e-analy-vis', source: 'node-analytics', target: 'node-visualizations', animated: true, style: { stroke: '#059669' } },
+  { id: 'e-analy-patt', source: 'node-analytics', target: 'node-patterns', animated: true, style: { stroke: '#059669' } },
+  { id: 'e-vis-copilot', source: 'node-visualizations', target: 'node-copilot', animated: true, style: { stroke: '#D97706' } },
+  { id: 'e-patt-copilot', source: 'node-patterns', target: 'node-copilot', animated: true, style: { stroke: '#DC2626' } },
+  { id: 'e-copilot-ins', source: 'node-copilot', target: 'node-insights', animated: true, style: { stroke: '#2563EB' } },
+  { id: 'e-copilot-rep', source: 'node-copilot', target: 'node-reports', animated: true, style: { stroke: '#2563EB' } },
 ];
 
 export const WorkspacePage: React.FC = () => {
-  const { activeDataset } = useWorkspaceStore();
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const { activeDataset, datasets } = useWorkspaceStore();
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    activeDataset ? createInitialNodes(activeDataset.original_filename, activeDataset.current_version_num, null) : []
+  );
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeData, setSelectedNodeData] = useState<any>(null);
 
+  useEffect(() => {
+    if (activeDataset) {
+      Promise.all([
+        api.getDatasetQuality(activeDataset.id).catch(() => null),
+        api.getPatterns(activeDataset.id).catch(() => [])
+      ]).then(([q, p]) => {
+        setNodes(createInitialNodes(
+          activeDataset.original_filename, 
+          activeDataset.current_version_num, 
+          q?.overall_score ?? null,
+          p?.length ?? 0
+        ));
+      });
+    }
+  }, [activeDataset, setNodes]);
+
   const onConnect = useCallback(
-    (params: any) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#6366F1' } }, eds)),
+    (params: any) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#2563EB' } }, eds)),
     [setEdges]
   );
 
@@ -117,34 +142,46 @@ export const WorkspacePage: React.FC = () => {
     );
   };
 
+  if (!activeDataset) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-4">
+        <h1 className="text-lg sm:text-xl font-semibold text-[#0F172A] tracking-tight">Workspace</h1>
+        <div className="p-6 sm:p-8 text-center bg-white border border-[#E2E8F0] rounded-lg">
+          <p className="text-xs sm:text-sm text-[#64748B]">
+            {datasets.length === 0 ? 'Upload a dataset to view the pipeline workspace.' : 'Select a dataset to view the workspace.'}
+          </p>
+          <Link 
+            to="/datasets"
+            className="mt-3 inline-block bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-medium px-4 py-2 rounded-md transition-colors touch-manipulation"
+          >
+            {datasets.length === 0 ? 'Upload Dataset' : 'Select Dataset'}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-[calc(100vh-6rem)] relative flex flex-col rounded-2xl border border-white/10 bg-[#090D16] overflow-hidden">
-      {/* Top Spatial Control Bar */}
-      <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-[#111827]/90 backdrop-blur-md z-10">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2">
-            <MapPin className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">Spatial Data Workspace</span>
-          </div>
-          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold border border-indigo-500/30">
-            {activeDataset?.originalFilename || 'customer_churn_analysis.csv'} (V2)
+    <div className="h-[calc(100vh-7rem)] sm:h-[calc(100vh-7.5rem)] relative flex flex-col rounded-xl border border-[#E2E8F0] bg-white overflow-hidden min-w-0">
+      {/* Top Bar */}
+      <div className="h-12 border-b border-[#E2E8F0] px-3 sm:px-4 flex items-center justify-between bg-white z-10 text-xs">
+        <div className="flex items-center space-x-2 min-w-0 mr-2">
+          <span className="font-semibold text-[#0F172A] whitespace-nowrap">Canvas:</span>
+          <span className="text-[#64748B] truncate" title={activeDataset.original_filename}>
+            {activeDataset.original_filename} (v{activeDataset.current_version_num})
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setNodes(initialNodes)}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors"
-            title="Reset Spatial Layout"
-          >
-            <RefreshCw className="w-3 h-3 text-cyan-400" />
-            <span>Reset Layout</span>
-          </button>
-        </div>
+        <button 
+          onClick={() => setNodes(createInitialNodes(activeDataset.original_filename, activeDataset.current_version_num))}
+          className="px-2.5 py-1 rounded border border-[#CBD5E1] text-[#475569] hover:bg-[#F8FAFC] transition-colors whitespace-nowrap touch-manipulation"
+        >
+          Reset
+        </button>
       </div>
 
-      {/* Spatial React Flow Canvas */}
-      <div className="flex-1 relative">
+      {/* React Flow Canvas */}
+      <div className="flex-1 relative bg-[#F8FAFC]">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -158,14 +195,19 @@ export const WorkspacePage: React.FC = () => {
           minZoom={0.3}
           maxZoom={1.8}
           proOptions={{ hideAttribution: true }}
-          className="bg-[#090D16]"
+          className="bg-transparent"
         >
-          <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="rgba(255, 255, 255, 0.08)" />
-          <Controls className="!bg-[#111827]/90 !border-white/10 !text-gray-300" />
+          <Background 
+            variant={BackgroundVariant.Dots} 
+            gap={20} 
+            size={1} 
+            color="#E2E8F0" 
+          />
+          <Controls className="!bg-white !border-[#E2E8F0] !text-[#0F172A] !rounded-md overflow-hidden hidden sm:flex" />
           <MiniMap 
-            nodeColor="#6366F1"
-            maskColor="rgba(9, 13, 22, 0.8)"
-            className="!bg-[#111827] !border-white/10 !rounded-xl overflow-hidden" 
+            nodeColor="#2563EB"
+            maskColor="rgba(248, 250, 252, 0.85)"
+            className="!bg-white !border-[#E2E8F0] !rounded-md overflow-hidden hidden md:block" 
           />
         </ReactFlow>
       </div>

@@ -1,13 +1,12 @@
 import os
 import json
+import logging
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
 from app.models.project import Project
 from app.models.dataset import Dataset, DatasetVersion
 from app.schemas.common import ApiResponse
@@ -17,13 +16,13 @@ from app.data_processing.loader import load_dataframe, extract_metadata
 
 router = APIRouter()
 
+@router.get("", response_model=ApiResponse[List[DatasetResponse]], include_in_schema=False)
 @router.get("/", response_model=ApiResponse[List[DatasetResponse]])
 def list_datasets(
     project_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    project = db.query(Project).filter(Project.id == project_id, Project.user_id == current_user.id).first()
+    project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
         
@@ -38,32 +37,60 @@ def list_datasets(
 def upload_dataset(
     project_id: str = Form(...),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    project = db.query(Project).filter(Project.id == project_id, Project.user_id == current_user.id).first()
+    project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
     ext = os.path.splitext(file.filename or "")[1].lower().lstrip(".")
-    if ext not in ["csv", "xlsx", "xls"]:
+    if ext not in ["csv", "xlsx", "xls", "json"]:
         raise HTTPException(
             status_code=400,
-            detail="Invalid file format. Only CSV and Excel files (.csv, .xlsx, .xls) are allowed."
+            detail="Invalid file format. Supported formats are CSV, Excel (.xlsx, .xls), and JSON (.json)."
         )
 
     # Save to storage driver
     storage_path, file_size = storage_service.save_file(file, subfolder="raw")
 
-    # Load DataFrame & Extract metadata
-    df = load_dataframe(storage_path, ext)
-    row_count, col_count, columns_meta = extract_metadata(df)
+    if file_size == 0:
+        if os.path.exists(storage_path):
+            try:
+                os.remove(storage_path)
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty (0 bytes)."
+        )
+
+    # Load DataFrame & Extract metadata with cleanup on failure
+    try:
+        df = load_dataframe(storage_path, ext)
+        row_count, col_count, columns_meta = extract_metadata(df)
+    except HTTPException:
+        if os.path.exists(storage_path):
+            try:
+                os.remove(storage_path)
+            except Exception:
+                pass
+        raise
+    except Exception as e:
+        if os.path.exists(storage_path):
+            try:
+                os.remove(storage_path)
+            except Exception:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Failed to parse dataset file. The file content could not be processed."
+        )
 
     # Create Dataset Record
     dataset = Dataset(
         project_id=project_id,
-        user_id=current_user.id,
-        original_filename=file.filename or "dataset.csv",
+        user_id="default-user",
+        original_filename=file.filename or f"dataset.{ext}",
         storage_path=storage_path,
         file_type=ext,
         file_size_bytes=file_size,
@@ -84,6 +111,40 @@ def upload_dataset(
     )
     db.add(version_1)
     db.commit()
+    db.refresh(version_1)
+
+    # Run automated profiling pipeline immediately upon upload
+    try:
+        from app.data_processing.profiler import profile_dataset
+        from app.data_processing.quality import calculate_quality_score
+        from app.models.profile import DataProfile, QualityScore
+
+        num_sum, cat_sum, dt_sum, dtypes = profile_dataset(df)
+        profile = DataProfile(
+            dataset_version_id=version_1.id,
+            numeric_summary=num_sum,
+            categorical_summary=cat_sum,
+            datetime_summary=dt_sum,
+            data_types=dtypes
+        )
+        db.add(profile)
+
+        overall, comp, uniq, val, cons, issues = calculate_quality_score(df)
+        quality = QualityScore(
+            dataset_version_id=version_1.id,
+            overall_score=overall,
+            completeness_score=comp,
+            uniqueness_score=uniq,
+            validity_score=val,
+            consistency_score=cons,
+            detected_issues=issues
+        )
+        db.add(quality)
+        db.commit()
+    except Exception as profile_err:
+        # Logging failure without blocking upload completion
+        logger = logging.getLogger("uvicorn.error")
+        logger.error(f"Automated initial profiling encountered error: {profile_err}")
 
     return {
         "success": True,
@@ -94,10 +155,9 @@ def upload_dataset(
 @router.get("/{dataset_id}", response_model=ApiResponse[dict])
 def get_dataset_detail(
     dataset_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
         
@@ -120,10 +180,9 @@ def get_dataset_preview(
     version_num: Optional[int] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=500),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -161,13 +220,12 @@ def get_dataset_preview(
 @router.get("/{dataset_id}/profile", response_model=ApiResponse[DataProfileResponse])
 def get_dataset_profile(
     dataset_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     from app.data_processing.profiler import profile_dataset
     from app.models.profile import DataProfile
     
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
         
@@ -203,13 +261,12 @@ def get_dataset_profile(
 @router.get("/{dataset_id}/quality", response_model=ApiResponse[QualityScoreResponse])
 def get_dataset_quality(
     dataset_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     from app.data_processing.quality import calculate_quality_score
     from app.models.profile import QualityScore
 
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -243,3 +300,31 @@ def get_dataset_quality(
         "data": quality,
         "error": None
     }
+
+@router.delete("/{dataset_id}", response_model=ApiResponse[dict])
+def delete_dataset(
+    dataset_id: str,
+    db: Session = Depends(get_db)
+):
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    # Clean up versions and raw files
+    versions = db.query(DatasetVersion).filter(DatasetVersion.dataset_id == dataset_id).all()
+    for v in versions:
+        if v.storage_path and os.path.exists(v.storage_path):
+            try:
+                os.remove(v.storage_path)
+            except Exception:
+                pass
+
+    db.delete(dataset)
+    db.commit()
+
+    return {
+        "success": True,
+        "data": {"message": "Dataset deleted successfully", "id": dataset_id},
+        "error": None
+    }
+

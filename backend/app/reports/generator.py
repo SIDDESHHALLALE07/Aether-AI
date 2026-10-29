@@ -23,6 +23,9 @@ def generate_executive_report_html(
         </div>
         """
 
+    overall_val = quality_score.get('overall_score')
+    overall_display = f"{overall_val}/100" if overall_val is not None else "N/A"
+
     html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -40,14 +43,14 @@ def generate_executive_report_html(
 </head>
 <body>
     <div class="header">
-        <div class="title">AETHER COPILOT AI — EXECUTIVE REPORT</div>
-        <div class="subtitle">Dataset: {dataset_name} | Generated automatically by Aether Intelligence</div>
+        <div class="title">AETHER — DATA ANALYSIS REPORT</div>
+        <div class="subtitle">Dataset: {dataset_name} | Generated automatically by Aether Engine</div>
     </div>
 
     <div class="grid">
         <div class="card">
             <div style="font-size:12px; color:#94a3b8; text-transform:uppercase;">Data Quality Score</div>
-            <div class="metric-val">{quality_score.get('overall_score', 95.0)}/100</div>
+            <div class="metric-val">{overall_display}</div>
         </div>
         <div class="card">
             <div style="font-size:12px; color:#94a3b8; text-transform:uppercase;">Total Records</div>

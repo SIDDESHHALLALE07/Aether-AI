@@ -9,8 +9,38 @@ from app.core.database import engine
 from app.models import Base
 from app.api.v1.api import api_router
 
+def ensure_parser_dependencies():
+    import sys
+    import subprocess
+    import logging
+    logger = logging.getLogger("uvicorn.error")
+    
+    # Check and ensure openpyxl
+    try:
+        import openpyxl  # type: ignore  # noqa: F401
+    except ImportError:
+        logger.warning("openpyxl is not installed. Attempting automatic installation...")
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "openpyxl>=3.1.2"], check=True)
+            logger.info("Successfully installed openpyxl.")
+        except Exception as e:
+            logger.error(f"Failed to auto-install openpyxl: {e}")
+
+    # Check and ensure xlrd
+    try:
+        import xlrd  # type: ignore  # noqa: F401
+    except ImportError:
+        logger.warning("xlrd is not installed. Attempting automatic installation...")
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "xlrd>=2.0.2"], check=True)
+            logger.info("Successfully installed xlrd.")
+        except Exception as e:
+            logger.error(f"Failed to auto-install xlrd: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure critical parser dependencies are installed
+    ensure_parser_dependencies()
     # Initialize database tables on startup
     Base.metadata.create_all(bind=engine)
     yield
@@ -64,6 +94,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    import logging, traceback
+    logging.getLogger("uvicorn.error").error(f"Unhandled Exception: {exc}\n{traceback.format_exc()}")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -71,7 +103,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             "data": None,
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": str(exc)
+                "message": "An unexpected error occurred while processing the request."
             }
         }
     )
@@ -108,4 +140,4 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=settings.PORT, reload=True)
+    uvicorn.run("app.main:app", host="127.0.0.1", port=settings.PORT, reload=True)

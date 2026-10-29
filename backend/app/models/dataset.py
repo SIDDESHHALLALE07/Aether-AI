@@ -1,9 +1,20 @@
+from __future__ import annotations
 import uuid
 from sqlalchemy import String, Integer, BigInteger, ForeignKey, JSON, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from app.core.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.user import User
+    from app.models.copilot import Conversation
+    from app.models.embedding import Embedding
+    from app.models.cleaning import CleaningOperation
+    from app.models.profile import DataProfile, QualityScore
+    from app.models.analytics import PatternResult, Insight
+    from app.models.report import Report
 
 def generate_uuid():
     return str(uuid.uuid4())
@@ -13,7 +24,7 @@ class Dataset(Base, TimestampMixin):
     
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, default="default-user", index=True)
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     storage_path: Mapped[str] = mapped_column(String(512), nullable=False)
     file_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -22,7 +33,6 @@ class Dataset(Base, TimestampMixin):
     
     # Relationships
     project: Mapped["Project"] = relationship("Project", back_populates="datasets")
-    user: Mapped["User"] = relationship("User", back_populates="datasets")
     versions: Mapped[List["DatasetVersion"]] = relationship("DatasetVersion", back_populates="dataset", cascade="all, delete-orphan")
     conversations: Mapped[List["Conversation"]] = relationship("Conversation", back_populates="dataset", cascade="all, delete-orphan")
     cleaning_operations: Mapped[List["CleaningOperation"]] = relationship("CleaningOperation", back_populates="dataset", cascade="all, delete-orphan")

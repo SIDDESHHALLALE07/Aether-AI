@@ -1,20 +1,22 @@
+// Theme store — permanently light. Dark mode has been removed.
+// This stub is kept for import compatibility during the transition.
+
 import { create } from 'zustand';
-import type { ThemeMode } from '../types';
 
 interface ThemeState {
-  theme: ThemeMode;
-  setTheme: (theme: ThemeMode) => void;
+  theme: 'light';
+  setTheme: (theme: 'light') => void;
 }
 
-export const useThemeStore = create<ThemeState>((set) => ({
-  theme: (localStorage.getItem('aether_theme') as ThemeMode) || 'dark',
-  setTheme: (theme) => {
-    localStorage.setItem('aether_theme', theme);
-    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    set({ theme });
+// Ensure .dark class is never present (clear any legacy localStorage value)
+if (typeof window !== 'undefined') {
+  document.documentElement.classList.remove('dark');
+  try { localStorage.removeItem('aether_theme'); } catch (_) {}
+}
+
+export const useThemeStore = create<ThemeState>(() => ({
+  theme: 'light',
+  setTheme: () => {
+    // No-op: application is permanently light
   },
 }));

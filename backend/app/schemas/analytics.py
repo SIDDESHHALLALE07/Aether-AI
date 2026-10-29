@@ -28,8 +28,10 @@ class InsightResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class VisualizationRequest(BaseModel):
-    chart_type: str # bar | line | scatter | histogram | heatmap | pie | box
-    x_column: str
+    chart_type: str # bar_vertical | bar_horizontal | line | area | scatter | histogram | box | heatmap | pie | donut
+    x_column: Optional[str] = None
     y_column: Optional[str] = None
     group_by: Optional[str] = None
     aggregation: Optional[str] = "sum" # sum | mean | count | min | max
+    bins: Optional[int] = 15
+    selected_columns: Optional[List[str]] = None

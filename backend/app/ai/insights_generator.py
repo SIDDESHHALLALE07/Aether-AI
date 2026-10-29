@@ -5,6 +5,9 @@ from app.data_processing.quality import calculate_quality_score
 from app.pattern_discovery.detector import detect_correlations, detect_anomalies
 
 def generate_automated_insights(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    if df is None or len(df) == 0:
+        return []
+
     insights = []
 
     # 1. Quality & Completeness Insight
@@ -67,14 +70,14 @@ def generate_automated_insights(df: pd.DataFrame) -> List[Dict[str, Any]]:
             "confidence_score": 0.88
         })
 
-    # 4. Fallback Default Insight
-    if not insights:
+    # 4. Fallback Default Insight for valid non-empty datasets
+    if not insights and len(df) > 0:
         insights.append({
             "title": "Healthy Distribution & Metric Balance",
             "insight_type": "opportunity",
-            "description": f"Dataset contains {len(df)} records with stable quality metrics.",
+            "description": f"Dataset contains {len(df):,} records with stable quality metrics.",
             "computed_evidence": {"total_rows": len(df), "total_columns": len(df.columns)},
-            "ai_interpretation": "The dataset is well-formatted and ready for predictive modeling and custom chart visualization.",
+            "ai_interpretation": "The dataset is structured and ready for deeper exploratory analysis.",
             "confidence_score": 0.90
         })
 

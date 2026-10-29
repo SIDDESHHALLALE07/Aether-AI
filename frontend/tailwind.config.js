@@ -4,33 +4,45 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
+  darkMode: false,
   theme: {
     extend: {
       colors: {
         background: {
-          DEFAULT: '#0B0F19',
-          card: '#111827',
-          hover: '#1F2937',
-          sidebar: '#0D111D',
-          canvas: '#090D16',
+          DEFAULT: '#F5F7FB',
+          card: '#FFFFFF',
+          elevated: '#FFFFFF',
+          hover: '#F8FAFC',
+          sidebar: 'rgba(255,255,255,0.76)',
+          canvas: '#F5F7FB',
+        },
+        surface: {
+          base: '#FFFFFF',
+          elevated: 'rgba(255,255,255,0.92)',
+          glass: 'rgba(255,255,255,0.72)',
+        },
+        text: {
+          primary: '#111827',
+          secondary: '#475569',
+          muted: '#64748B',
         },
         accent: {
-          cyan: '#06B6D4',
-          indigo: '#6366F1',
-          purple: '#A855F7',
-          emerald: '#10B981',
-          rose: '#F43F5E',
-          amber: '#F59E0B',
+          indigo: '#4F46E5',
+          indigoLight: '#6366F1',
+          cyan: '#0284C7',
+          emerald: '#059669',
+          amber: '#D97706',
+          rose: '#DC2626',
         },
         border: {
-          subtle: 'rgba(255, 255, 255, 0.08)',
-          glow: 'rgba(99, 102, 241, 0.3)',
+          subtle: '#E2E8F0',
+          card: 'rgba(255,255,255,0.80)',
+          glow: 'rgba(79,70,229,0.16)',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'Fira Code', 'Consolas', 'monospace'],
       },
       backdropBlur: {
         xs: '2px',

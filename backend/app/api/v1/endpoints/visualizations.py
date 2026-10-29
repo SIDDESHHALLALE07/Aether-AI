@@ -3,8 +3,6 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_db
-from app.core.security import get_current_user
-from app.models.user import User
 from app.models.dataset import Dataset, DatasetVersion
 from app.schemas.common import ApiResponse
 from app.schemas.analytics import VisualizationRequest
@@ -17,10 +15,9 @@ router = APIRouter()
 def generate_chart_data(
     dataset_id: str,
     viz_in: VisualizationRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
@@ -38,7 +35,9 @@ def generate_chart_data(
         x_column=viz_in.x_column,
         y_column=viz_in.y_column,
         group_by=viz_in.group_by,
-        aggregation=viz_in.aggregation
+        aggregation=viz_in.aggregation,
+        bins=viz_in.bins,
+        selected_columns=viz_in.selected_columns
     )
 
     return {
@@ -50,10 +49,9 @@ def generate_chart_data(
 @router.get("/{dataset_id}/recommendations", response_model=ApiResponse[List[dict]])
 def get_chart_recommendations(
     dataset_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    dataset = db.query(Dataset).filter(Dataset.id == dataset_id, Dataset.user_id == current_user.id).first()
+    dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
 

@@ -1,14 +1,13 @@
 import pandas as pd
 import numpy as np
-from scipy import stats
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 from typing import Dict, Any, List
 
 def detect_correlations(df: pd.DataFrame, threshold: float = 0.5) -> List[Dict[str, Any]]:
-    numeric_df = df.select_dtypes(include=[np.number]).dropna()
+    numeric_df = df.select_dtypes(include="number").dropna()
     if numeric_df.shape[1] < 2 or numeric_df.shape[0] < 3:
         return []
+
+    from scipy import stats
 
     patterns = []
     cols = list(numeric_df.columns)
@@ -37,8 +36,8 @@ def detect_correlations(df: pd.DataFrame, threshold: float = 0.5) -> List[Dict[s
                     },
                     "evidence": {
                         "sample_size": len(numeric_df),
-                        "mean_var1": round(float(numeric_df[c1].mean()), 2),
-                        "mean_var2": round(float(numeric_df[c2].mean()), 2)
+                        "mean_var1": round(numeric_df[c1].mean(), 2),
+                        "mean_var2": round(numeric_df[c2].mean(), 2)
                     },
                     "explanation": explanation
                 })
@@ -46,7 +45,7 @@ def detect_correlations(df: pd.DataFrame, threshold: float = 0.5) -> List[Dict[s
     return patterns
 
 def detect_anomalies(df: pd.DataFrame) -> List[Dict[str, Any]]:
-    numeric_df = df.select_dtypes(include=[np.number])
+    numeric_df = df.select_dtypes(include="number")
     if numeric_df.shape[1] < 1 or numeric_df.shape[0] < 4:
         return []
 
@@ -66,7 +65,7 @@ def detect_anomalies(df: pd.DataFrame) -> List[Dict[str, Any]]:
         outliers = s[(s < lower_bound) | (s > upper_bound)]
         
         if len(outliers) > 0:
-            outlier_pct = round(float(len(outliers) / len(s) * 100), 2)
+            outlier_pct = round(len(outliers) / len(s) * 100, 2)
             explanation = (
                 f"Detected {len(outliers)} statistical anomaly outlier(s) in '{col}' ({outlier_pct}% of total records). "
                 f"Values fell outside IQR bounds [{round(float(lower_bound), 2)}, {round(float(upper_bound), 2)}]."
@@ -92,11 +91,13 @@ def detect_anomalies(df: pd.DataFrame) -> List[Dict[str, Any]]:
     return patterns
 
 def detect_clusters(df: pd.DataFrame, max_k: int = 3) -> List[Dict[str, Any]]:
-    numeric_df = df.select_dtypes(include=[np.number]).dropna()
+    numeric_df = df.select_dtypes(include="number").dropna()
     if numeric_df.shape[1] < 2 or numeric_df.shape[0] < 6:
         return []
 
     try:
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.cluster import KMeans
         scaler = StandardScaler()
         scaled_data = scaler.fit_transform(numeric_df)
         
@@ -112,7 +113,7 @@ def detect_clusters(df: pd.DataFrame, max_k: int = 3) -> List[Dict[str, Any]]:
         
         for c_idx in range(k):
             size = int((labels == c_idx).sum())
-            pct = round(float(size / len(numeric_df) * 100), 2)
+            pct = round(size / len(numeric_df) * 100, 2)
             c_center = {cols: round(float(val), 2) for cols, val in zip(numeric_df.columns, centers[c_idx])}
             cluster_summary.append({
                 "cluster_id": c_idx + 1,
@@ -124,7 +125,7 @@ def detect_clusters(df: pd.DataFrame, max_k: int = 3) -> List[Dict[str, Any]]:
         cols_str = ", ".join(list(numeric_df.columns)[:3])
         explanation = (
             f"Automated segmentation identified {k} distinct clusters across dimensions ({cols_str}). "
-            f"Inertia = {round(float(kmeans.inertia_), 2)}."
+            f"Inertia = {round(kmeans.inertia_, 2)}."
         )
 
         return [{
@@ -132,7 +133,7 @@ def detect_clusters(df: pd.DataFrame, max_k: int = 3) -> List[Dict[str, Any]]:
             "variables": {"feature_columns": list(numeric_df.columns), "num_clusters": k},
             "statistical_metrics": {
                 "num_clusters": k,
-                "inertia": round(float(kmeans.inertia_), 2)
+                "inertia": round(kmeans.inertia_, 2)
             },
             "evidence": {
                 "clusters": cluster_summary

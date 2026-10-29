@@ -77,6 +77,8 @@ def query_relevant_context(
     scored_chunks = []
     for emb in embeddings:
         try:
+            if not emb.embedding_data:
+                continue
             vec = json.loads(emb.embedding_data) if isinstance(emb.embedding_data, str) else list(emb.embedding_data)
             score = cosine_similarity(query_vec, vec)
             scored_chunks.append({

@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.schemas.common import ApiResponse
 from app.api.v1.endpoints import (
     auth,
     projects,
@@ -24,6 +25,10 @@ api_router.include_router(patterns.router, prefix="/patterns", tags=["Pattern Di
 api_router.include_router(copilot.router, prefix="/copilot", tags=["AI Copilot"])
 api_router.include_router(insights.router, prefix="/insights", tags=["AI Insights"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports & Export"])
+
+# Direct /settings endpoint
+api_router.add_api_route("/settings", auth.get_user_settings, methods=["GET"], response_model=ApiResponse[auth.UserSettings], tags=["Settings"])
+api_router.add_api_route("/settings", auth.update_user_settings, methods=["PUT"], response_model=ApiResponse[auth.UserSettings], tags=["Settings"])
 
 @api_router.get("/status", tags=["System"])
 def get_api_status():

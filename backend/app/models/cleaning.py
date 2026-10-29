@@ -1,9 +1,13 @@
+from __future__ import annotations
 import uuid
 from sqlalchemy import String, Integer, ForeignKey, JSON, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from app.core.base import Base
+
+if TYPE_CHECKING:
+    from app.models.dataset import Dataset
 
 def generate_uuid():
     return str(uuid.uuid4())
