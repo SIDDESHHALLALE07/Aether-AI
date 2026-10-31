@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     def clean_gemini_api_key(self) -> str:
         key = self.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY", "")
         clean = key.strip("<> \t\r\n\"'")
-        if not clean or clean.startswith("AQ.") or "your_api_key" in clean.lower() or "<" in key or "placeholder" in clean.lower():
+        if not clean or "your_api_key" in clean.lower() or "<your" in clean.lower() or "placeholder" in clean.lower():
             return ""
         return clean
 

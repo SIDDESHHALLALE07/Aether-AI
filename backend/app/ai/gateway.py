@@ -16,8 +16,13 @@ logger = logging.getLogger(__name__)
 class GeminiCopilotGateway:
     def __init__(self):
         self.api_key = settings.clean_gemini_api_key
-        self.model_name = settings.GEMINI_MODEL or "gemini-3.8-flash"
-        if self.api_key:
+        self.model_name = settings.GEMINI_MODEL or "gemini-3.5-flash"
+        self._ensure_configured()
+
+    def _ensure_configured(self):
+        key = settings.clean_gemini_api_key
+        if key:
+            self.api_key = key
             try:
                 genai.configure(api_key=self.api_key)
             except Exception as e:
@@ -278,6 +283,7 @@ class GeminiCopilotGateway:
 
         # --- STEP 2: CONSTRUCT AI RESPONSE VIA GEMINI ---
         ai_response_text = ""
+        self._ensure_configured()
         if self.api_key:
             try:
                 ai_response_text = self._call_gemini_model(
@@ -432,7 +438,7 @@ Audience Level: {audience_instruction}
 
         # Candidate models to try in order of priority (deduplicated)
         candidates = []
-        for candidate in [self.model_name, "gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"]:
+        for candidate in [self.model_name, "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash"]:
             if candidate and candidate not in candidates:
                 candidates.append(candidate)
 
@@ -443,7 +449,7 @@ Audience Level: {audience_instruction}
             for attempt in range(max_attempts):
                 try:
                     model = genai.GenerativeModel(m_name)
-                    response = model.generate_content(prompt, request_options={"timeout": 25})
+                    response = model.generate_content(prompt, request_options={"timeout": 60})
                     if response and response.text:
                         text = response.text.strip()
                         if text:
