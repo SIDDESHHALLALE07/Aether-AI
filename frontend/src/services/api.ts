@@ -18,7 +18,20 @@ import type {
   ApiResponse 
 } from '../types';
 
-const API_BASE = '/api/v1';
+// Determine API Base URL dynamically:
+// In development, defaults to Vite proxy (/api/v1).
+// In production on Vercel or custom domain, uses VITE_API_URL if configured.
+const RAW_API_URL = ((import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '') as string).trim();
+
+export const getApiBaseUrl = (): string => {
+  if (!RAW_API_URL) {
+    return '/api/v1';
+  }
+  const cleanUrl = RAW_API_URL.replace(/\/+$/, '');
+  return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
+};
+
+const API_BASE = getApiBaseUrl();
 
 class ApiClient {
   private token: string | null = null;

@@ -19,23 +19,29 @@ def ensure_parser_dependencies():
     try:
         import openpyxl  # type: ignore  # noqa: F401
     except ImportError:
-        logger.warning("openpyxl is not installed. Attempting automatic installation...")
-        try:
-            subprocess.run([sys.executable, "-m", "pip", "install", "openpyxl>=3.1.2"], check=True)
-            logger.info("Successfully installed openpyxl.")
-        except Exception as e:
-            logger.error(f"Failed to auto-install openpyxl: {e}")
+        if settings.ENVIRONMENT != "production":
+            logger.warning("openpyxl is not installed. Attempting automatic installation...")
+            try:
+                subprocess.run([sys.executable, "-m", "pip", "install", "openpyxl>=3.1.2"], check=True)
+                logger.info("Successfully installed openpyxl.")
+            except Exception as e:
+                logger.error(f"Failed to auto-install openpyxl: {e}")
+        else:
+            logger.error("openpyxl is not installed in the production environment. Please install it via requirements.txt.")
 
     # Check and ensure xlrd
     try:
         import xlrd  # type: ignore  # noqa: F401
     except ImportError:
-        logger.warning("xlrd is not installed. Attempting automatic installation...")
-        try:
-            subprocess.run([sys.executable, "-m", "pip", "install", "xlrd>=2.0.2"], check=True)
-            logger.info("Successfully installed xlrd.")
-        except Exception as e:
-            logger.error(f"Failed to auto-install xlrd: {e}")
+        if settings.ENVIRONMENT != "production":
+            logger.warning("xlrd is not installed. Attempting automatic installation...")
+            try:
+                subprocess.run([sys.executable, "-m", "pip", "install", "xlrd>=2.0.2"], check=True)
+                logger.info("Successfully installed xlrd.")
+            except Exception as e:
+                logger.error(f"Failed to auto-install xlrd: {e}")
+        else:
+            logger.error("xlrd is not installed in the production environment. Please install it via requirements.txt.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,10 +60,11 @@ app = FastAPI(
 )
 
 # Configure CORS Middleware
-if settings.CORS_ORIGINS:
+allowed_origins = settings.cors_origins_list
+if allowed_origins:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

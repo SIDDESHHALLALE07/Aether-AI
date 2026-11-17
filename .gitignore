@@ -63,8 +63,32 @@ logs/
 
 # Build Outputs
 dist/
+frontend/dist/
 out/
 .next/
+.vercel/
+
+# Databases & Runtime User Data (Do not track local/dev databases)
+*.db
+*.db.bak
+*.db-journal
+*.sqlite
+*.sqlite3
+aether_dev.db
+test_aether.db
+backend/aether_dev.db
+backend/aether_dev.db.bak
+backend/test_aether.db
+
+# Generated Reports & PDFs
+reports/
+backend/reports/
+*.pdf
+
+# Runtime User Settings & Preference States
+backend/storage/settings/*.json
+storage/settings/*.json
+!backend/storage/settings/.gitkeep
 
 # Local Uploaded Datasets & Storage Fallback
 backend/storage/uploads/*
@@ -73,6 +97,18 @@ backend/storage/temp/*
 !backend/storage/temp/.gitkeep
 backend/storage/reports/*
 !backend/storage/reports/.gitkeep
+storage/uploads/*
+storage/temp/*
+
+# Ad-hoc Scratch Scripts & Temporary Diff Dumps
+scratch/
+backend/scratch/
+diff_head.txt
+*.diff
+*.patch
+
+# Embedded Repositories
+unslop/
 
 # OS generated
 .DS_Store

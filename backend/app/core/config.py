@@ -1,6 +1,7 @@
-import os
+﻿import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from typing import List, Union
+import json
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 WORKSPACE_ROOT = os.path.dirname(BACKEND_DIR)
@@ -14,33 +15,48 @@ class Settings(BaseSettings):
     PORT: int = 8000
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "info"
-    
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
-    
+
+    # CORS (Supports list or comma-separated string from environment variables)
+    CORS_ORIGINS: Union[List[str], str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        val = self.CORS_ORIGINS
+        if isinstance(val, str):
+            val = val.strip()
+            if val.startswith('[') and val.endswith(']'):
+                try:
+                    parsed = json.loads(val)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed if item]
+                except Exception:
+                    pass
+            return [origin.strip() for origin in val.split(',') if origin.strip()]
+        return val
+
     # Security & JWT
     SECRET_KEY: str = "aether-copilot-secure-secret-key-change-in-production-64bytes"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    
+
     # Database (Canonical SQLite path anchored to backend directory)
     DATABASE_URL: str = DEFAULT_DB_URL
-    
+
     # Storage
     STORAGE_DRIVER: str = "local"
     LOCAL_STORAGE_PATH: str = DEFAULT_STORAGE_PATH
-    
+
     # R2 Storage
     R2_ACCOUNT_ID: str = ""
     R2_ACCESS_KEY_ID: str = ""
     R2_SECRET_ACCESS_KEY: str = ""
     R2_BUCKET_NAME: str = "aether-datasets"
-    
+
     # Gemini AI
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.5-flash"
-    
+
     @property
     def clean_gemini_api_key(self) -> str:
         key = self.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY", "")
