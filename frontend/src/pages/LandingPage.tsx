@@ -1,22 +1,38 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Sun, Moon } from 'lucide-react';
+import { useThemeStore } from '../stores/useThemeStore';
 
 export const LandingPage: React.FC = () => {
+  const { resolvedTheme, toggleTheme } = useThemeStore();
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#0F172A] dark:text-[#F8FAFC] font-sans transition-colors duration-200">
       {/* Header */}
-      <nav className="h-14 border-b border-[#E2E8F0] bg-white px-4 sm:px-6 flex items-center justify-between min-w-0">
+      <nav className="h-14 border-b border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-[#111827] px-4 sm:px-6 flex items-center justify-between min-w-0">
         <div className="flex items-center space-x-2 flex-shrink-0">
           <img src="/favicon.svg" alt="Aether Logo" className="w-6 h-6" width={24} height={24} />
-          <span className="font-bold text-base tracking-tight text-[#0F172A]">
+          <span className="font-bold text-base tracking-tight text-[#0F172A] dark:text-white">
             Aether
           </span>
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-3">
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 sm:p-2 rounded-lg text-[#64748B] hover:text-[#0F172A] dark:text-slate-300 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors touch-manipulation min-h-[34px] min-w-[34px] flex items-center justify-center border border-transparent hover:border-[#CBD5E1]"
+            title={resolvedTheme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+            aria-label={resolvedTheme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {resolvedTheme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700" />
+            )}
+          </button>
           <Link 
             to="/dashboard"
-            className="text-xs font-medium text-[#475569] hover:text-[#0F172A] px-2.5 py-1.5 transition-colors touch-manipulation"
+            className="text-xs font-medium text-[#475569] hover:text-[#0F172A] dark:text-slate-300 dark:hover:text-white px-2.5 py-1.5 transition-colors touch-manipulation"
           >
             Overview
           </Link>

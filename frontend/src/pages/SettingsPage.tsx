@@ -2,14 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import type { UserSettings } from '../types';
 import { useWorkspaceStore } from '../stores/useWorkspaceStore';
-import { Loader2, Save, RotateCcw } from 'lucide-react';
+import { useThemeStore } from '../stores/useThemeStore';
+import { 
+  Loader2, 
+  Save, 
+  RotateCcw, 
+  User, 
+  Palette, 
+  Database, 
+  Bot, 
+  FileText,
+  CheckCircle2,
+  Sun,
+  Moon,
+  Monitor
+} from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { resetWorkspace } = useWorkspaceStore();
+  const { theme: storeTheme, setTheme: setStoreTheme } = useThemeStore();
   const [activeTab, setActiveTab] = useState<'account' | 'appearance' | 'data' | 'ai' | 'reports'>('appearance');
   
   const [settings, setSettings] = useState<UserSettings>({
-    theme: 'light',
+    theme: storeTheme || 'light',
     date_format: 'YYYY-MM-DD',
     number_format: 'standard',
     copilot_enabled: true,
@@ -46,7 +61,14 @@ export const SettingsPage: React.FC = () => {
       try {
         const saved = await api.getUserSettings().catch(() => null);
         if (saved) {
-          setSettings({ ...saved, theme: 'light' });
+          const localStored = (localStorage.getItem('aether_theme') as any) || storeTheme;
+          const currentTheme = localStored || (saved.theme as any) || 'system';
+          setSettings({ ...saved, theme: currentTheme });
+          if (currentTheme) {
+            setStoreTheme(currentTheme);
+          }
+        } else {
+          setSettings(prev => ({ ...prev, theme: storeTheme }));
         }
       } catch {
         // Handled
@@ -57,14 +79,20 @@ export const SettingsPage: React.FC = () => {
     loadData();
   }, []);
 
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setSettings(prev => ({ ...prev, theme: newTheme }));
+    setStoreTheme(newTheme);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setSaveStatus(null);
     try {
-      const updated = await api.updateUserSettings({ ...settings, theme: 'light' });
-      setSettings({ ...updated, theme: 'light' });
-      setSaveStatus('Settings saved successfully.');
-      setTimeout(() => setSaveStatus(null), 2500);
+      const updated = await api.updateUserSettings(settings);
+      setSettings(updated);
+      setStoreTheme(updated.theme);
+      setSaveStatus('Preferences saved successfully.');
+      setTimeout(() => setSaveStatus(null), 3000);
     } catch {
       setSaveStatus('Failed to save settings.');
     } finally {
@@ -73,219 +101,317 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleResetWorkspace = () => {
-    if (window.confirm('Reset active workspace state?')) {
+    if (window.confirm('Reset active workspace state and reload defaults?')) {
       resetWorkspace();
-      setSaveStatus('Workspace state reset.');
-      setTimeout(() => setSaveStatus(null), 2500);
+      setSaveStatus('Workspace cache reset.');
+      setTimeout(() => setSaveStatus(null), 3000);
     }
   };
 
-  const tabs: { id: 'account' | 'appearance' | 'data' | 'ai' | 'reports'; label: string }[] = [
-    { id: 'account', label: 'Account' },
-    { id: 'appearance', label: 'Appearance' },
-    { id: 'data', label: 'Data Processing' },
-    { id: 'ai', label: 'AI Copilot' },
-    { id: 'reports', label: 'Report Defaults' },
+  const tabs: { id: 'account' | 'appearance' | 'data' | 'ai' | 'reports'; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'data', label: 'Data Processing', icon: Database },
+    { id: 'ai', label: 'AI Copilot', icon: Bot },
+    { id: 'reports', label: 'Report Defaults', icon: FileText },
+    { id: 'account', label: 'Account Profile', icon: User },
   ];
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto py-16 text-center">
-        <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin mx-auto mb-2" />
-        <p className="text-xs text-[#64748B]">Loading settings...</p>
+      <div className="flex flex-col items-center justify-center py-24 card-base max-w-4xl mx-auto">
+        <Loader2 className="w-7 h-7 text-[#2563EB] animate-spin" />
+        <span className="mt-3 text-xs font-medium text-[#64748B]">Loading preferences...</span>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-5 min-w-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12 min-w-0">
+      {/* Header Banner */}
+      <div className="card-base p-4 sm:p-6 bg-gradient-to-r from-white via-white to-blue-50/40 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-[#0F172A] tracking-tight">Settings</h1>
-          <p className="text-xs text-[#64748B] mt-0.5">Application preferences and configuration</p>
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">Studio Settings</h1>
+            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+              Preferences
+            </span>
+          </div>
+          <p className="text-xs text-[#64748B] mt-1">Configure statistical computation parameters, AI persona, and display units</p>
         </div>
+
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full sm:w-auto flex items-center justify-center space-x-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white text-xs font-medium px-4 py-2.5 sm:py-2 rounded-md transition-colors touch-manipulation"
+          className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-all shadow-xs hover:shadow touch-manipulation cursor-pointer"
         >
-          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-          <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <span>{isSaving ? 'Saving Changes...' : 'Save Preferences'}</span>
         </button>
       </div>
 
       {saveStatus && (
-        <div className="p-3 rounded-lg bg-[#F0FDF4] border border-[#DCFCE7] text-[#166534] text-xs">
-          {saveStatus}
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center space-x-2 shadow-2xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span className="font-semibold">{saveStatus}</span>
         </div>
       )}
 
-      {/* Responsive Tab Strip */}
-      <div className="overflow-x-auto scrollbar-none flex border-b border-[#E2E8F0] space-x-2 sm:space-x-4 text-xs font-medium min-w-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`pb-2.5 px-1 border-b-2 transition-colors whitespace-nowrap touch-manipulation ${
-              activeTab === tab.id
-                ? 'border-[#2563EB] text-[#2563EB] font-semibold'
-                : 'border-transparent text-[#64748B] hover:text-[#0F172A]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Segmented Tab Strip */}
+      <div className="bg-slate-100/80 p-1 rounded-xl flex items-center space-x-1 text-xs font-semibold overflow-x-auto scrollbar-none shadow-2xs">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg transition-all whitespace-nowrap touch-manipulation cursor-pointer ${
+                isActive
+                  ? 'bg-white text-blue-700 shadow-xs font-bold border border-slate-200/60'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Content */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 sm:p-6 space-y-4 text-xs text-[#0F172A] min-w-0">
-        {/* 1. Account */}
-        {activeTab === 'account' && (
-          <div className="space-y-4 min-w-0">
-            <h2 className="font-semibold text-sm text-[#0F172A]">Account Information</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-lg">
-              <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">User Name</label>
-                <input
-                  type="text"
-                  disabled
-                  value="Aether Analyst"
-                  className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">Email</label>
-                <input
-                  type="email"
-                  disabled
-                  value="analyst@aether.local"
-                  className="w-full bg-[#F8FAFC] border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A]"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 2. Appearance */}
+      {/* Content Card */}
+      <div className="card-base p-5 sm:p-7 space-y-5 text-xs text-[#0F172A] min-w-0">
+        {/* 1. Appearance */}
         {activeTab === 'appearance' && (
-          <div className="space-y-4 min-w-0">
-            <h2 className="font-semibold text-sm text-[#0F172A]">Theme & Appearance</h2>
-            <div className="space-y-3.5 max-w-md">
+          <div className="space-y-5 min-w-0">
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="font-bold text-sm text-[#0F172A]">Display & Interface Standards</h2>
+              <p className="text-[11px] text-slate-500">Color temperature, system theme switching, and locale formatting</p>
+            </div>
+
+            <div className="space-y-5 max-w-xl">
               <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">Theme</label>
-                <select
-                  disabled
-                  value="light"
-                  className="w-full bg-white border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A] touch-manipulation"
-                >
-                  <option value="light">Light (Standard Professional)</option>
-                </select>
+                <label className="block text-xs font-semibold text-[#475569] mb-2">Color System & Themes</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Light Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange('light')}
+                    className={`flex flex-col items-start p-3.5 rounded-xl border transition-all text-left cursor-pointer ${
+                      settings.theme === 'light'
+                        ? 'border-[#2563EB] bg-blue-50/60 shadow-xs ring-1 ring-[#2563EB]'
+                        : 'border-[#CBD5E1] hover:border-slate-400 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600 border border-amber-200">
+                        <Sun className="w-4 h-4" />
+                      </div>
+                      {settings.theme === 'light' && (
+                        <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                      )}
+                    </div>
+                    <span className="font-bold text-xs text-[#0F172A]">Crisp Light</span>
+                    <span className="text-[11px] text-[#64748B] mt-0.5">High-contrast modern enterprise SaaS mode</span>
+                  </button>
+
+                  {/* Dark Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange('dark')}
+                    className={`flex flex-col items-start p-3.5 rounded-xl border transition-all text-left cursor-pointer ${
+                      settings.theme === 'dark'
+                        ? 'border-[#2563EB] bg-blue-50/60 shadow-xs ring-1 ring-[#2563EB]'
+                        : 'border-[#CBD5E1] hover:border-slate-400 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <div className="p-1.5 rounded-lg bg-slate-800 text-slate-200 border border-slate-700">
+                        <Moon className="w-4 h-4" />
+                      </div>
+                      {settings.theme === 'dark' && (
+                        <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                      )}
+                    </div>
+                    <span className="font-bold text-xs text-[#0F172A]">Obsidian Dark</span>
+                    <span className="text-[11px] text-[#64748B] mt-0.5">Deep slate & obsidian dark cyber aesthetic</span>
+                  </button>
+
+                  {/* System Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleThemeChange('system')}
+                    className={`flex flex-col items-start p-3.5 rounded-xl border transition-all text-left cursor-pointer ${
+                      settings.theme === 'system'
+                        ? 'border-[#2563EB] bg-blue-50/60 shadow-xs ring-1 ring-[#2563EB]'
+                        : 'border-[#CBD5E1] hover:border-slate-400 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <div className="p-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-300">
+                        <Monitor className="w-4 h-4" />
+                      </div>
+                      {settings.theme === 'system' && (
+                        <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                      )}
+                    </div>
+                    <span className="font-bold text-xs text-[#0F172A]">System Default</span>
+                    <span className="text-[11px] text-[#64748B] mt-0.5">Automatically syncs with OS dark/light mode</span>
+                  </button>
+                </div>
               </div>
+
               <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">Language</label>
+                <label className="block text-xs font-semibold text-[#475569] mb-1.5">System Language</label>
                 <select
                   disabled
                   value="en"
-                  className="w-full bg-white border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A] touch-manipulation"
+                  className="w-full bg-slate-50 border border-[#CBD5E1] rounded-lg px-3.5 py-2 text-xs text-[#0F172A] shadow-2xs"
                 >
-                  <option value="en">English (US)</option>
+                  <option value="en">English (United States)</option>
                 </select>
               </div>
             </div>
           </div>
         )}
 
-        {/* 3. Data */}
+        {/* 2. Data */}
         {activeTab === 'data' && (
           <div className="space-y-4 min-w-0">
-            <h2 className="font-semibold text-sm text-[#0F172A]">Data & Workspace</h2>
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="font-bold text-sm text-[#0F172A]">Computation & Workspace Cache</h2>
+              <p className="text-[11px] text-slate-500">Fast in-memory execution parameters and background summarization</p>
+            </div>
+
             <div className="space-y-4 max-w-md">
               <div>
                 <button
                   type="button"
                   onClick={handleResetWorkspace}
-                  className="flex items-center space-x-1.5 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] text-xs font-medium px-3.5 py-2 rounded-md transition-colors touch-manipulation"
+                  className="flex items-center space-x-2 bg-white hover:bg-slate-50 border border-[#CBD5E1] text-[#0F172A] text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-2xs touch-manipulation cursor-pointer"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-[#64748B]" />
-                  <span>Clear workspace session state</span>
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Flush Local Workspace State</span>
                 </button>
+                <p className="text-[11px] text-slate-400 mt-1.5">Clears active session cache and reloads datasets from backend storage.</p>
               </div>
+
               <div className="pt-2">
-                <label className="flex items-center space-x-2.5 cursor-pointer touch-manipulation">
+                <label className="flex items-start space-x-3 cursor-pointer touch-manipulation">
                   <input
                     type="checkbox"
                     checked={settings.ai_processing_enabled}
                     onChange={(e) => setSettings({ ...settings, ai_processing_enabled: e.target.checked })}
-                    className="rounded border-[#CBD5E1] text-[#2563EB] w-4 h-4"
+                    className="rounded border-[#CBD5E1] text-[#2563EB] w-4 h-4 mt-0.5"
                   />
-                  <span className="text-xs text-[#475569]">Enable automatic dataset statistical summarization on upload</span>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-800 block">Automatic Statistical Profiling on Upload</span>
+                    <span className="text-[11px] text-slate-500 block">Computes column distributions, missing value ratios, and cardinality immediately when files are uploaded.</span>
+                  </div>
                 </label>
               </div>
             </div>
           </div>
         )}
 
-        {/* 4. AI */}
+        {/* 3. AI */}
         {activeTab === 'ai' && (
           <div className="space-y-4 min-w-0">
-            <h2 className="font-semibold text-sm text-[#0F172A]">AI Copilot Preferences</h2>
-            <div className="space-y-3.5 max-w-md">
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="font-bold text-sm text-[#0F172A]">Aether Copilot Reasoning Persona</h2>
+              <p className="text-[11px] text-slate-500">Fine-tune tone, depth of statistical explanations, and analytical output</p>
+            </div>
+
+            <div className="space-y-4 max-w-md">
               <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">Response Style</label>
+                <label className="block text-xs font-semibold text-[#475569] mb-1.5">Explanation Depth</label>
                 <select
                   value={settings.copilot_style}
                   onChange={(e) => setSettings({ ...settings, copilot_style: e.target.value as any })}
-                  className="w-full bg-white border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A] focus:outline-none focus:border-[#2563EB] touch-manipulation"
+                  className="w-full bg-white border border-[#CBD5E1] rounded-lg px-3.5 py-2 text-xs text-[#0F172A] focus:outline-none focus:border-[#2563EB] shadow-2xs"
                 >
-                  <option value="concise">Concise (Direct analytical metrics)</option>
-                  <option value="balanced">Balanced (Metrics + context)</option>
-                  <option value="detailed">Detailed (In-depth breakdown)</option>
+                  <option value="concise">Concise (Direct quantitative figures & metrics)</option>
+                  <option value="balanced">Balanced (Empirical numbers + executive context)</option>
+                  <option value="detailed">Exhaustive (Full mathematical methodology & caveats)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">Analytical Detail Level</label>
+                <label className="block text-xs font-semibold text-[#475569] mb-1.5">Audience Persona</label>
                 <select
                   value={settings.copilot_level}
                   onChange={(e) => setSettings({ ...settings, copilot_level: e.target.value as any })}
-                  className="w-full bg-white border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A] focus:outline-none focus:border-[#2563EB] touch-manipulation"
+                  className="w-full bg-white border border-[#CBD5E1] rounded-lg px-3.5 py-2 text-xs text-[#0F172A] focus:outline-none focus:border-[#2563EB] shadow-2xs"
                 >
-                  <option value="beginner">Standard Business</option>
-                  <option value="intermediate">Advanced Statistical</option>
-                  <option value="advanced">Comprehensive Data Science</option>
+                  <option value="beginner">Business Executive (Strategic insights)</option>
+                  <option value="intermediate">Data Analyst (Formulas, correlations, distributions)</option>
+                  <option value="advanced">Senior Data Scientist (Parametric & non-parametric rigor)</option>
                 </select>
               </div>
             </div>
           </div>
         )}
 
-        {/* 5. Reports */}
+        {/* 4. Reports */}
         {activeTab === 'reports' && (
           <div className="space-y-4 min-w-0">
-            <h2 className="font-semibold text-sm text-[#0F172A]">Report Generation Defaults</h2>
-            <div className="space-y-3.5 max-w-md">
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="font-bold text-sm text-[#0F172A]">Default Document Template</h2>
+              <p className="text-[11px] text-slate-500">Standard sections and styling embedded into generated PDF files</p>
+            </div>
+
+            <div className="space-y-4 max-w-md">
               <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">Default Format</label>
+                <label className="block text-xs font-semibold text-[#475569] mb-1.5">Default Export Format</label>
                 <select
                   disabled
                   value="pdf"
-                  className="w-full bg-white border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A] touch-manipulation"
+                  className="w-full bg-slate-50 border border-[#CBD5E1] rounded-lg px-3.5 py-2 text-xs text-[#0F172A] shadow-2xs"
                 >
-                  <option value="pdf">PDF (Print-Ready A4 Document)</option>
+                  <option value="pdf">Vector PDF (Print-Ready A4 Document)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#475569] mb-1">Default Report Detail</label>
+                <label className="block text-xs font-semibold text-[#475569] mb-1.5">Default Audit Scope</label>
                 <select
                   value={settings.report_include_summary ? 'detailed' : 'summary'}
                   onChange={(e) => setSettings({ ...settings, report_include_summary: e.target.value === 'detailed' })}
-                  className="w-full bg-white border border-[#CBD5E1] rounded-md px-3 py-2 text-xs text-[#0F172A] focus:outline-none focus:border-[#2563EB] touch-manipulation"
+                  className="w-full bg-white border border-[#CBD5E1] rounded-lg px-3.5 py-2 text-xs text-[#0F172A] focus:outline-none focus:border-[#2563EB] shadow-2xs"
                 >
-                  <option value="summary">Summary Report</option>
-                  <option value="detailed">Comprehensive Audit</option>
+                  <option value="summary">Summary Snapshot</option>
+                  <option value="detailed">Comprehensive Deep-Dive Audit</option>
                 </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5. Account */}
+        {activeTab === 'account' && (
+          <div className="space-y-4 min-w-0">
+            <div className="pb-3 border-b border-slate-100">
+              <h2 className="font-bold text-sm text-[#0F172A]">Analyst Profile</h2>
+              <p className="text-[11px] text-slate-500">Active user session metadata</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+              <div>
+                <label className="block text-xs font-semibold text-[#475569] mb-1.5">Name</label>
+                <input
+                  type="text"
+                  disabled
+                  value="Aether Analyst"
+                  className="w-full bg-slate-50 border border-[#CBD5E1] rounded-lg px-3.5 py-2 text-xs text-[#0F172A] font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#475569] mb-1.5">Session Email</label>
+                <input
+                  type="email"
+                  disabled
+                  value="analyst@aether.local"
+                  className="w-full bg-slate-50 border border-[#CBD5E1] rounded-lg px-3.5 py-2 text-xs text-[#0F172A] font-medium"
+                />
               </div>
             </div>
           </div>

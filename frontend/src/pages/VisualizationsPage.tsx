@@ -1115,7 +1115,7 @@ export const VisualizationsPage: React.FC = () => {
                         }`}
                       >
                         <span className="truncate mr-1">{col}</span>
-                        {isSelected && <span className="text-xs font-bold">✓</span>}
+                        {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
                       </button>
                     );
                   })

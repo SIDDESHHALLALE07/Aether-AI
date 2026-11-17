@@ -31,6 +31,31 @@ from reportlab.pdfgen import canvas
 from app.reports.analysis_engine import analyze_dataset_for_report
 
 
+def _clean_text(text: Any) -> str:
+    """Removes emojis and unsupported unicode symbols to ensure clean PDF rendering."""
+    if text is None:
+        return ""
+    text_str = str(text)
+    emoji_pattern = re.compile(
+        r"[\U00010000-\U0010FFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|[\u2300-\u23FF]|[\u2B50-\u2B55]",
+        flags=re.UNICODE
+    )
+    text_str = emoji_pattern.sub("", text_str)
+    replacements = {
+        "\u2014": " - ",
+        "\u2013": " - ",
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201C": '"',
+        "\u201D": '"',
+        "\u2026": "...",
+        "\u00A0": " ",
+    }
+    for orig, rep in replacements.items():
+        text_str = text_str.replace(orig, rep)
+    return text_str.strip()
+
+
 class NumberedCanvas(canvas.Canvas):
     """
     Two-pass canvas for dynamic total page count and professional running header/footer.
@@ -63,7 +88,7 @@ class NumberedCanvas(canvas.Canvas):
             self.drawString(40, 810, "Aether")
             self.setFont("Helvetica", 8.5)
             self.setFillColor(colors.HexColor("#64748B"))
-            self.drawString(75, 810, "— Data Analysis Report")
+            self.drawString(75, 810, "- Data Analysis Report")
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(40, 802, 555, 802)
@@ -398,6 +423,9 @@ def generate_executive_pdf_report(
     Data Quality, Descriptive Statistics, Categorical Analysis, Distribution Analysis,
     Correlation Analysis, Relationships, Outlier Analysis, Key Findings, Recommendations, Appendix.
     """
+    dataset_name = _clean_text(dataset_name)
+    project_name = _clean_text(project_name)
+
     # 1. Compute empirical analysis if not provided
     if analysis is None:
         if df is not None and len(df) > 0:
@@ -409,7 +437,7 @@ def generate_executive_pdf_report(
             )
         else:
             analysis = {
-                "report_title": f"Data Analysis Report — {dataset_name}",
+                "report_title": f"Data Analysis Report - {dataset_name}",
                 "dataset_name": dataset_name,
                 "project_name": project_name,
                 "version_number": version_num,
@@ -445,8 +473,11 @@ def generate_executive_pdf_report(
     overall_score = dq.get("overall_score", 95)
     sub_scores = dq.get("sub_scores", {})
     kpi_cards = analysis.get("kpi_cards", [])
-    key_findings = analysis.get("key_findings", [])
-    recs = analysis.get("recommendations", [])
+    key_findings = [_clean_text(f) for f in analysis.get("key_findings", [])]
+    recs = [
+        {k: _clean_text(v) if isinstance(v, str) else v for k, v in r.items()}
+        for r in analysis.get("recommendations", [])
+    ]
 
     numeric_cols = [c for c, p in col_profiles.items() if p.get("is_numeric")]
     cat_cols = [c for c, p in col_profiles.items() if p.get("is_categorical")]
@@ -663,7 +694,7 @@ def generate_executive_pdf_report(
 
     story.append(Paragraph("Key Summary Findings:", style_h2))
     for f in key_findings[:4]:
-        story.append(Paragraph(f"• {f}", style_body))
+        story.append(Paragraph(f"&bull; {f}", style_body))
     story.append(Spacer(1, 12))
 
     # ==========================================================================
@@ -1017,7 +1048,7 @@ def generate_executive_pdf_report(
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CBD5E1'), spaceAfter=8))
 
     for item in key_findings[:6]:
-        story.append(Paragraph(f"• {item}", style_body))
+        story.append(Paragraph(f"&bull; {item}", style_body))
     story.append(Spacer(1, 10))
 
     # ==========================================================================
@@ -1063,9 +1094,9 @@ def generate_executive_pdf_report(
         [
             Paragraph("<b>Mathematical Methodology</b>", style_tbl_cell),
             Paragraph(
-                "• <b>Tukey's IQR Outlier Rule:</b> Outliers identified strictly outside [Q1 - 1.5*IQR, Q3 + 1.5*IQR].<br/>"
-                "• <b>Pearson Correlation:</b> Linear association computed as r = cov(X, Y) / (std(X) * std(Y)).<br/>"
-                "• <b>Fisher-Pearson Skewness:</b> g1 = m3 / (m2^(3/2)) measuring distribution symmetry.",
+                "&bull; <b>Tukey's IQR Outlier Rule:</b> Outliers identified strictly outside [Q1 - 1.5*IQR, Q3 + 1.5*IQR].<br/>"
+                "&bull; <b>Pearson Correlation:</b> Linear association computed as r = cov(X, Y) / (std(X) * std(Y)).<br/>"
+                "&bull; <b>Fisher-Pearson Skewness:</b> g1 = m3 / (m2^(3/2)) measuring distribution symmetry.",
                 style_tbl_cell
             )
         ],
@@ -1080,7 +1111,7 @@ def generate_executive_pdf_report(
         [
             Paragraph("<b>Compilation Provenance</b>", style_tbl_cell),
             Paragraph(
-                f"Generated by Aether Engine • ReportLab PDF Architecture • Python {pd.__version__} / NumPy {np.__version__}. "
+                f"Generated by Aether Engine | ReportLab PDF Architecture | Python {pd.__version__} / NumPy {np.__version__}. "
                 f"Timestamp: {now_clean}.",
                 style_tbl_cell
             )

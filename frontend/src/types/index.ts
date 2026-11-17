@@ -1,4 +1,4 @@
-export type ThemeMode = 'light';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export interface User {
   id: string;
@@ -225,7 +225,7 @@ export interface CleaningOperation {
 export type CleaningOperationItem = CleaningOperation;
 
 export interface UserSettings {
-  theme: 'light';
+  theme: ThemeMode;
   date_format: string;
   number_format: string;
   copilot_enabled: boolean;

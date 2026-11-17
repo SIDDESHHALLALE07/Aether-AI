@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 import createPlotlyComponent from 'react-plotly.js/factory';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 const Plot = createPlotlyComponent(Plotly);
 
@@ -38,9 +39,12 @@ export const PlotlyChart: React.FC<PlotlyChartProps> = ({
   const isSmallMobile = containerWidth < 400;
   const isMobile = containerWidth < 640;
 
-  const textColor = '#0F172A';
-  const gridColor = '#F1F5F9';
-  const zerolineColor = '#E2E8F0';
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
+
+  const textColor = isDark ? '#E2E8F0' : '#0F172A';
+  const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9';
+  const zerolineColor = isDark ? 'rgba(255, 255, 255, 0.16)' : '#E2E8F0';
 
   const defaultMargin = isSmallMobile 
     ? { l: 32, r: 12, t: 24, b: 40, pad: 2 }
