@@ -1,9 +1,10 @@
 import os
 import json
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from jose import jwt
@@ -21,7 +22,7 @@ from app.schemas.copilot import (
     ConversationCreate,
     ConversationUpdate
 )
-from app.ai.gateway import gemini_gateway
+from app.ai.gateway import gemini_gateway, get_cached_user_copilot_settings
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,173 @@ def get_user_id(request: Request) -> str:
         except Exception:
             pass
     return "default-user"
+
+@router.post("/chat/stream")
+async def stream_chat_with_copilot(
+    request: Request,
+    chat_in: ChatRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Incremental Server-Sent Events (SSE) streaming endpoint for Aether Copilot.
+    Emits metadata (evidence, charts, reports), progressive text deltas, and completion.
+    """
+    try:
+        user_id = get_user_id(request)
+        dataset_id = chat_in.dataset_id
+        dataset = None
+
+        if dataset_id:
+            dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+            if not dataset:
+                raise HTTPException(status_code=404, detail="I couldn't find the selected dataset.")
+
+        # Resolve or create Conversation
+        conversation = None
+        if chat_in.conversation_id:
+            conversation = db.query(Conversation).filter(
+                Conversation.id == chat_in.conversation_id,
+                Conversation.user_id == user_id
+            ).first()
+
+        if not conversation:
+            if dataset_id:
+                conversation = db.query(Conversation).filter(
+                    Conversation.dataset_id == dataset_id,
+                    Conversation.user_id == user_id
+                ).order_by(Conversation.updated_at.desc()).first()
+
+            if not conversation:
+                default_title = f"Chat - {dataset.original_filename}" if dataset else f"{chat_in.message[:28]}..."
+                conversation = Conversation(
+                    dataset_id=dataset_id,
+                    project_id=chat_in.project_id or (dataset.project_id if dataset else None),
+                    user_id=user_id,
+                    title=default_title
+                )
+                db.add(conversation)
+                db.commit()
+                db.refresh(conversation)
+
+        if dataset_id and conversation.dataset_id != dataset_id:
+            conversation.dataset_id = dataset_id
+            db.commit()
+
+        # Save User Message
+        user_msg = Message(
+            conversation_id=conversation.id,
+            sender="user",
+            content=chat_in.message
+        )
+        db.add(user_msg)
+        db.commit()
+        db.refresh(user_msg)
+
+        # Bounded history query: fetch only recent turns to avoid latency overhead
+        past_messages = db.query(Message).filter(
+            Message.conversation_id == conversation.id
+        ).order_by(Message.created_at.desc()).limit(8).all()
+        past_messages.reverse()
+
+        history_list = [
+            {
+                "sender": m.sender,
+                "content": m.content,
+                "evidence": m.evidence
+            }
+            for m in past_messages[:-1] # exclude the user message just added
+        ]
+
+        response_style, explanation_level = get_cached_user_copilot_settings()
+
+        async def sse_event_generator():
+            accumulated_text = ""
+            evidence_dict: Optional[Dict[str, Any]] = None
+            bot_msg_id: Optional[str] = None
+
+            try:
+                async for event in gemini_gateway.stream_chat(
+                    user_message=chat_in.message,
+                    user_id=user_id,
+                    db=db,
+                    dataset_id=dataset_id,
+                    project_id=conversation.project_id,
+                    conversation_history=history_list,
+                    response_style=response_style,
+                    explanation_level=explanation_level
+                ):
+                    if await request.is_disconnected():
+                        logger.info("Client disconnected from Copilot stream.")
+                        break
+
+                    event_type = event.get("type")
+                    if event_type == "metadata":
+                        evidence_dict = event.get("evidence")
+                        meta_payload = {
+                            "conversation_id": conversation.id,
+                            "user_message_id": user_msg.id,
+                            "evidence": evidence_dict,
+                            "intent": event.get("intent"),
+                            "suggested_actions": event.get("suggested_actions", [])
+                        }
+                        yield f"event: metadata\ndata: {json.dumps(meta_payload)}\n\n"
+
+                    elif event_type == "delta":
+                        text_delta = event.get("text", "")
+                        accumulated_text += text_delta
+                        yield f"event: delta\ndata: {json.dumps({'text': text_delta})}\n\n"
+
+                    elif event_type == "done":
+                        accumulated_text = event.get("total_text", accumulated_text)
+                        evidence_dict = event.get("evidence", evidence_dict)
+
+            except Exception as stream_err:
+                logger.error(f"Error during streaming generation: {stream_err}", exc_info=True)
+                yield f"event: error\ndata: {json.dumps({'message': 'I encountered an issue processing your request.'})}\n\n"
+
+            # Persist generated response to database
+            try:
+                final_text = accumulated_text or "I processed your request."
+                bot_msg = Message(
+                    conversation_id=conversation.id,
+                    sender="bot",
+                    content=final_text,
+                    evidence=evidence_dict
+                )
+                db.add(bot_msg)
+                conversation.updated_at = datetime.now(timezone.utc)
+                db.commit()
+                db.refresh(bot_msg)
+                bot_msg_id = bot_msg.id
+            except Exception as persist_err:
+                logger.error(f"Failed to persist streamed bot message: {persist_err}")
+
+            done_payload = {
+                "id": bot_msg_id or "msg-done",
+                "conversation_id": conversation.id,
+                "content": accumulated_text,
+                "evidence": evidence_dict
+            }
+            yield f"event: done\ndata: {json.dumps(done_payload)}\n\n"
+
+        return StreamingResponse(
+            sse_event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error initializing stream: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to initiate AI streaming response."
+        )
 
 @router.post("/chat", response_model=ApiResponse[MessageResponse])
 def chat_with_copilot(
@@ -98,10 +266,11 @@ def chat_with_copilot(
         db.add(user_msg)
         db.commit()
 
-        # Fetch recent conversation history for multi-turn context
+        # Fetch recent conversation history with bounded limit for fast multi-turn context
         past_messages = db.query(Message).filter(
             Message.conversation_id == conversation.id
-        ).order_by(Message.created_at.asc()).all()
+        ).order_by(Message.created_at.desc()).limit(8).all()
+        past_messages.reverse()
 
         history_list = [
             {
@@ -112,18 +281,7 @@ def chat_with_copilot(
             for m in past_messages[:-1] # exclude the user message just added
         ]
 
-        # Load user personalized style preferences if available
-        settings_file = os.path.join("./storage/settings", "app_settings.json")
-        user_settings = {}
-        if os.path.exists(settings_file):
-            try:
-                with open(settings_file, "r", encoding="utf-8") as f:
-                    user_settings = json.load(f)
-            except Exception:
-                pass
-
-        response_style = user_settings.get("copilot_style", "balanced")
-        explanation_level = user_settings.get("copilot_level", "beginner")
+        response_style, explanation_level = get_cached_user_copilot_settings()
 
         # Process through AI Gateway
         ai_text, evidence_dict = gemini_gateway.process_chat(

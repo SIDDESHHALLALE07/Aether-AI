@@ -16,7 +16,7 @@ export const AppLayout: React.FC = () => {
       <Navbar />
       <div className="flex-1 flex min-w-0 w-full">
         <Sidebar />
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-3 sm:p-5 md:p-6 min-h-[calc(100vh-3.5rem)] max-w-[1536px] w-full mx-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 min-h-[calc(100vh-4rem)] max-w-[1680px] w-full mx-auto">
           <Outlet />
         </main>
       </div>

@@ -204,3 +204,29 @@ def test_conversation_management_and_isolation(client, user1, user2, sample_data
     u2_list = client.get("/api/v1/copilot/conversations", headers=user2["headers"])
     assert u2_list.status_code == 200
     assert len(u2_list.json()["data"]) == 0
+
+
+def test_copilot_streaming_sse_endpoint(client, user1, sample_dataset):
+    ds_id = sample_dataset["id"]
+    res = client.post("/api/v1/copilot/chat/stream", json={
+        "dataset_id": ds_id,
+        "message": "Analyze my dataset."
+    }, headers=user1["headers"])
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
+    body = res.text
+    assert "event: metadata" in body
+    assert "event: done" in body
+    assert '"conversation_id"' in body
+    assert '"evidence"' in body
+
+
+def test_copilot_streaming_general_query(client, user1):
+    res = client.post("/api/v1/copilot/chat/stream", json={
+        "message": "Hello"
+    }, headers=user1["headers"])
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
+    body = res.text
+    assert "event: metadata" in body
+    assert "event: done" in body

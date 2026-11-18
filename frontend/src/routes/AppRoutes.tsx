@@ -1,11 +1,11 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
-import { Loader2 } from 'lucide-react';
+import { AetherSignal } from '../components/motion';
 
 const PageLoader: React.FC = () => (
   <div className="flex flex-col items-center justify-center min-h-[55vh] gap-3">
-    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+    <AetherSignal status="processing" size="md" />
     <span className="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
       Loading view...
     </span>

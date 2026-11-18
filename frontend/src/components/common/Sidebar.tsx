@@ -17,7 +17,9 @@ import {
   ChevronRight,
   X
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useWorkspaceStore } from '../../stores/useWorkspaceStore';
+import { motionTokens } from '../motion/motionTokens';
 
 interface NavGroup {
   category: string;
@@ -86,104 +88,112 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      {/* Mobile Drawer Backdrop */}
-      {mobileMenuOpen && (
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 bg-slate-900/40 z-40 md:hidden backdrop-blur-xs transition-opacity duration-200"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Mobile Drawer (Slide-over on < 768px) */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white border-r border-[#E2E8F0] shadow-2xl flex flex-col justify-between transition-transform duration-200 ease-in-out md:hidden ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-        aria-label="Mobile Navigation"
-      >
-        <div className="flex flex-col h-full">
-          {/* Mobile Drawer Header */}
-          <div className="h-14 px-4 border-b border-[#E2E8F0] flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <img src="/favicon.svg" alt="Aether Logo" className="w-6 h-6 flex-shrink-0" width={24} height={24} />
-              <div className="flex items-center space-x-1.5">
-                <span className="font-bold text-[#0F172A] text-base tracking-tight">Aether</span>
-                <span className="text-[10px] bg-blue-50 text-blue-700 font-semibold px-1.5 py-0.5 rounded border border-blue-200">AI</span>
-              </div>
-            </div>
-            <button
+      {/* Mobile Drawer (AnimatePresence for smooth slide & backdrop) */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: motionTokens.duration.quick, ease: motionTokens.ease.out }}
               onClick={() => setMobileMenuOpen(false)}
-              className="p-2 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation"
-              aria-label="Close menu"
+              className="fixed inset-0 bg-slate-900/40 z-40 md:hidden backdrop-blur-xs"
+              aria-hidden="true"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: motionTokens.duration.sidebar, ease: motionTokens.ease.out }}
+              className="fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] bg-white dark:bg-[#0D111D] border-r border-[#E2E8F0] dark:border-white/10 shadow-2xl flex flex-col justify-between md:hidden"
+              aria-label="Mobile Navigation"
             >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Mobile Nav Links */}
-          <div className="flex-1 py-3 px-3 overflow-y-auto space-y-4 scrollbar-thin">
-            {navGroups.map((group) => (
-              <div key={group.category} className="space-y-1">
-                <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  {group.category}
+              <div className="flex flex-col h-full">
+                {/* Mobile Drawer Header */}
+                <div className="h-16 px-5 border-b border-[#E2E8F0] dark:border-white/10 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <img src="/favicon.svg" alt="Aether Logo" className="w-7 h-7 flex-shrink-0" width={28} height={28} />
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-[#0F172A] dark:text-[#F8FAFC] text-lg tracking-tight">Aether</span>
+                      <span className="text-xs bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">AI</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2.5 rounded-lg text-[#64748B] hover:text-[#0F172A] dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+                    aria-label="Close menu"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-medium transition-all touch-manipulation min-h-[40px] ${
-                          isActive
-                            ? 'bg-blue-50 text-blue-700 font-semibold shadow-2xs border border-blue-100'
-                            : 'text-[#475569] hover:text-[#0F172A] hover:bg-slate-50'
-                        }`
-                      }
-                    >
-                      <div className="flex items-center space-x-2.5 truncate">
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{item.name}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                          {item.badge}
-                        </span>
-                      )}
-                    </NavLink>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
 
-          {/* Mobile Drawer Footer info */}
-          <div className="p-3.5 border-t border-[#E2E8F0] bg-slate-50/50 text-xs text-[#64748B]">
-            <p className="font-semibold text-[#0F172A]">Aether Copilot AI</p>
-            <p className="text-[11px] text-[#94A3B8] mt-0.5">Statistical & Exploratory Analytics</p>
-          </div>
-        </div>
-      </aside>
+                {/* Mobile Nav Links */}
+                <div className="flex-1 py-4 px-3.5 overflow-y-auto space-y-5 scrollbar-thin">
+                  {navGroups.map((group) => (
+                    <div key={group.category} className="space-y-1.5">
+                      <div className="px-3.5 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                        {group.category}
+                      </div>
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <NavLink
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={({ isActive }) =>
+                              `relative flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors touch-manipulation min-h-[46px] ${
+                                isActive
+                                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold shadow-2xs border border-blue-100 dark:border-blue-800/60'
+                                  : 'text-[#475569] dark:text-slate-300 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                              }`
+                            }
+                          >
+                            <div className="flex items-center space-x-3 truncate">
+                              <Icon className="w-5 h-5 flex-shrink-0" />
+                              <span className="truncate">{item.name}</span>
+                            </div>
+                            {item.badge && (
+                              <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200">
+                                {item.badge}
+                              </span>
+                            )}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mobile Drawer Footer info */}
+                <div className="p-4 border-t border-[#E2E8F0] dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50 text-xs sm:text-sm text-[#64748B] dark:text-slate-400">
+                  <p className="font-semibold text-[#0F172A] dark:text-slate-200">Aether Copilot AI</p>
+                  <p className="text-xs text-[#94A3B8] dark:text-slate-500 mt-0.5">Statistical & Exploratory Analytics</p>
+                </div>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Desktop & Tablet Sidebar (>= 768px) */}
       <aside
-        className={`hidden md:flex h-[calc(100vh-3.5rem)] sticky top-14 border-r border-[#E2E8F0] bg-white transition-all duration-200 flex-col justify-between z-30 select-none flex-shrink-0 shadow-2xs ${
-          sidebarCollapsed ? 'w-14' : 'w-52 lg:w-56'
+        className={`hidden md:flex h-[calc(100vh-4rem)] sticky top-16 border-r border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-[#0D111D] transition-all duration-200 flex-col justify-between z-30 select-none flex-shrink-0 shadow-2xs ${
+          sidebarCollapsed ? 'w-16' : 'w-60 lg:w-64'
         }`}
         aria-label="Sidebar Navigation"
       >
-        <div className="py-3 px-2 overflow-y-auto space-y-4 scrollbar-thin">
+        <div className="py-4 px-2.5 overflow-y-auto space-y-5 scrollbar-thin">
           {navGroups.map((group) => (
-            <div key={group.category} className="space-y-0.5">
+            <div key={group.category} className="space-y-1">
               {!sidebarCollapsed && (
-                <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="px-3.5 pt-1.5 pb-1 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                   {group.category}
                 </div>
               )}
               {sidebarCollapsed && (
-                <div className="w-full h-px bg-slate-100 my-1" />
+                <div className="w-full h-px bg-slate-100 dark:bg-slate-800 my-1.5" />
               )}
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -192,24 +202,37 @@ export const Sidebar: React.FC = () => {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 touch-manipulation min-h-[36px] group ${
+                      `relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 touch-manipulation min-h-[44px] group ${
                         isActive
-                          ? 'bg-blue-50/90 text-blue-700 font-semibold shadow-2xs border border-blue-200/60'
-                          : 'text-[#475569] hover:text-[#0F172A] hover:bg-slate-50 border border-transparent'
+                          ? 'text-blue-700 dark:text-blue-300 font-semibold'
+                          : 'text-[#475569] dark:text-slate-300 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
                       }`
                     }
                     title={sidebarCollapsed ? item.name : undefined}
                   >
-                    <div className="flex items-center space-x-2.5 truncate">
-                      <Icon className="w-4 h-4 flex-shrink-0 group-hover:scale-105 transition-transform" />
-                      {!sidebarCollapsed && (
-                        <span className="truncate">{item.name}</span>
-                      )}
-                    </div>
-                    {!sidebarCollapsed && item.badge && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-100 text-blue-800">
-                        {item.badge}
-                      </span>
+                    {({ isActive }) => (
+                      <>
+                        {/* Aether Glide Active Navigation Indicator */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="sidebar-active-pill"
+                            className="absolute inset-0 bg-blue-50/90 dark:bg-blue-900/30 border border-blue-200/60 dark:border-blue-700/50 rounded-xl shadow-2xs z-0"
+                            transition={motionTokens.spring.glide}
+                          />
+                        )}
+
+                        <div className="relative z-10 flex items-center space-x-3 truncate">
+                          <Icon className="w-5 h-5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform duration-150" />
+                          {!sidebarCollapsed && (
+                            <span className="truncate">{item.name}</span>
+                          )}
+                        </div>
+                        {!sidebarCollapsed && item.badge && (
+                          <span className="relative z-10 text-xs font-bold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/80 text-blue-800 dark:text-blue-200">
+                            {item.badge}
+                          </span>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 );
@@ -219,19 +242,19 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Sidebar Toggle */}
-        <div className="p-2 border-t border-[#E2E8F0] bg-slate-50/30">
+        <div className="p-2.5 border-t border-[#E2E8F0] dark:border-white/10 bg-slate-50/30 dark:bg-slate-900/20">
           <button
             onClick={toggleSidebar}
-            className="w-full flex items-center justify-center py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100 transition-colors text-xs touch-manipulation min-h-[34px]"
+            className="w-full flex items-center justify-center py-2 rounded-xl text-[#64748B] dark:text-slate-400 hover:text-[#0F172A] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs sm:text-sm font-medium touch-manipulation min-h-[40px]"
             title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             aria-label={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {sidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             ) : (
               <div className="flex items-center space-x-2">
-                <ChevronLeft className="w-4 h-4" />
-                <span className="font-medium text-[11px]">Collapse View</span>
+                <ChevronLeft className="w-5 h-5" />
+                <span className="font-semibold text-xs sm:text-sm">Collapse View</span>
               </div>
             )}
           </button>

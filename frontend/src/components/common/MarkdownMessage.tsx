@@ -4,9 +4,10 @@ import { Copy, Check } from 'lucide-react';
 interface MarkdownMessageProps {
   content: string;
   className?: string;
+  isStreaming?: boolean;
 }
 
-export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, className = '' }) => {
+export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, className = '', isStreaming = false }) => {
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
 
   const handleCopyCode = (code: string, idx: number) => {
@@ -15,11 +16,18 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
     setTimeout(() => setCopiedBlock(null), 2000);
   };
 
+  // If a code block is unclosed during streaming, virtually close it for robust parsing
+  let parsedContent = content;
+  const backtickMatches = parsedContent.match(/```/g);
+  if (backtickMatches && backtickMatches.length % 2 !== 0) {
+    parsedContent += '\n```';
+  }
+
   // Split content by code blocks: ```lang ... ```
-  const parts = content.split(/(```[\s\S]*?```)/g);
+  const parts = parsedContent.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className={`space-y-3 leading-relaxed text-xs text-[#0F172A] break-words ${className}`}>
+    <div className={`space-y-3.5 leading-relaxed text-sm text-[#0F172A] break-words ${className}`}>
       {parts.map((part, index) => {
         if (part.startsWith('```') && part.endsWith('```')) {
           // Extract code and language
@@ -28,28 +36,28 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
           const code = (lines.slice(1).join('\n') || lines.join('\n')).trim();
 
           return (
-            <div key={index} className="my-2.5 rounded-lg overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] text-[#0F172A]">
-              <div className="flex items-center justify-between px-3 py-1.5 bg-[#F1F5F9] border-b border-[#E2E8F0] text-[10px] text-[#64748B] font-mono">
+            <div key={index} className="my-3 rounded-xl overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] text-[#0F172A]">
+              <div className="flex items-center justify-between px-3.5 py-2 bg-[#F1F5F9] border-b border-[#E2E8F0] text-xs text-[#64748B] font-mono">
                 <span className="font-semibold">{lang}</span>
                 <button
                   onClick={() => handleCopyCode(code, index)}
-                  className="flex items-center space-x-1 text-[#64748B] hover:text-[#0F172A] transition-colors py-0.5 px-1.5 rounded touch-manipulation"
+                  className="flex items-center space-x-1.5 text-[#64748B] hover:text-[#0F172A] transition-colors py-1 px-2 rounded-md hover:bg-slate-200/60 touch-manipulation"
                   title="Copy code"
                 >
                   {copiedBlock === index ? (
                     <>
-                      <Check className="w-3 h-3 text-[#166534]" />
-                      <span className="text-[#166534] font-semibold">Copied</span>
+                      <Check className="w-3.5 h-3.5 text-[#166534]" />
+                      <span className="text-[#166534] font-semibold text-xs">Copied</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3 h-3" />
-                      <span>Copy</span>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">Copy</span>
                     </>
                   )}
                 </button>
               </div>
-              <pre className="p-3 text-[11px] font-mono overflow-x-auto whitespace-pre leading-normal text-[#0F172A] bg-[#F8FAFC] scrollbar-thin">
+              <pre className="p-3.5 text-xs sm:text-sm font-mono overflow-x-auto whitespace-pre leading-relaxed text-[#0F172A] bg-[#F8FAFC] scrollbar-thin">
                 <code>{code}</code>
               </pre>
             </div>
@@ -57,7 +65,15 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
         }
 
         // Parse regular paragraphs, bullet points, headers, tables
-        return <FormattedBlock key={index} text={part} />;
+        const isLastPart = index === parts.length - 1;
+        return (
+          <React.Fragment key={index}>
+            <FormattedBlock text={part} />
+            {isStreaming && isLastPart && (
+              <span className="inline-block w-1.5 h-4 ml-1 bg-blue-600 animate-pulse align-middle rounded-xs" />
+            )}
+          </React.Fragment>
+        );
       })}
     </div>
   );
@@ -97,13 +113,13 @@ const FormattedBlock: React.FC<{ text: string }> = ({ text }) => {
 
         // Header Check
         if (trimmed.startsWith('### ')) {
-          return <h4 key={pIdx} className="text-xs font-bold text-[#0F172A] mt-2.5 mb-1"><InlineText text={trimmed.slice(4)} /></h4>;
+          return <h4 key={pIdx} className="text-sm sm:text-base font-bold text-[#0F172A] mt-3 mb-1.5"><InlineText text={trimmed.slice(4)} /></h4>;
         }
         if (trimmed.startsWith('## ')) {
-          return <h3 key={pIdx} className="text-sm font-bold text-[#0F172A] mt-3 mb-1"><InlineText text={trimmed.slice(3)} /></h3>;
+          return <h3 key={pIdx} className="text-base sm:text-lg font-bold text-[#0F172A] mt-4 mb-2"><InlineText text={trimmed.slice(3)} /></h3>;
         }
         if (trimmed.startsWith('# ')) {
-          return <h2 key={pIdx} className="text-base font-bold text-[#0F172A] mt-3.5 mb-1.5"><InlineText text={trimmed.slice(2)} /></h2>;
+          return <h2 key={pIdx} className="text-lg sm:text-xl font-bold text-[#0F172A] mt-5 mb-2.5"><InlineText text={trimmed.slice(2)} /></h2>;
         }
 
         // Normal paragraph with line breaks
@@ -133,7 +149,7 @@ const InlineText: React.FC<{ text: string }> = ({ text }) => {
         }
         if (part.startsWith('`') && part.endsWith('`')) {
           return (
-            <code key={i} className="px-1.5 py-0.5 rounded bg-[#F1F5F9] text-[#2563EB] font-mono text-[10px] border border-[#CBD5E1]">
+            <code key={i} className="px-1.5 py-0.5 rounded-md bg-[#F1F5F9] text-[#2563EB] font-mono text-xs border border-[#CBD5E1]">
               {part.slice(1, -1)}
             </code>
           );
@@ -155,12 +171,12 @@ const TableBlock: React.FC<{ lines: string[] }> = ({ lines }) => {
   const bodyRows = contentLines.slice(1).map(r => r.split('|').slice(1, -1).map(c => c.trim()));
 
   return (
-    <div className="my-2.5 overflow-x-auto rounded-lg border border-[#E2E8F0] bg-white scrollbar-thin">
-      <table className="w-full text-left text-[11px] min-w-[320px]">
+    <div className="my-3 overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white scrollbar-thin shadow-2xs">
+      <table className="w-full text-left text-xs sm:text-sm min-w-[340px]">
         <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] font-semibold text-[#0F172A]">
           <tr>
             {headerCells.map((h, i) => (
-              <th key={i} className="px-3 py-2 whitespace-nowrap"><InlineText text={h} /></th>
+              <th key={i} className="px-4 py-2.5 whitespace-nowrap"><InlineText text={h} /></th>
             ))}
           </tr>
         </thead>
@@ -168,7 +184,7 @@ const TableBlock: React.FC<{ lines: string[] }> = ({ lines }) => {
           {bodyRows.map((row, rIdx) => (
             <tr key={rIdx} className="hover:bg-[#F8FAFC] transition-colors">
               {row.map((cell, cIdx) => (
-                <td key={cIdx} className="px-3 py-1.5 text-[#475569] whitespace-nowrap"><InlineText text={cell} /></td>
+                <td key={cIdx} className="px-4 py-2 text-[#475569] whitespace-nowrap"><InlineText text={cell} /></td>
               ))}
             </tr>
           ))}

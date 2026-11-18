@@ -47,10 +47,10 @@ export const PlotlyChart: React.FC<PlotlyChartProps> = ({
   const zerolineColor = isDark ? 'rgba(255, 255, 255, 0.16)' : '#E2E8F0';
 
   const defaultMargin = isSmallMobile 
-    ? { l: 32, r: 12, t: 24, b: 40, pad: 2 }
+    ? { l: 38, r: 14, t: 28, b: 46, pad: 2 }
     : isMobile 
-    ? { l: 40, r: 16, t: 28, b: 44, pad: 2 }
-    : { l: 50, r: 24, t: 32, b: 48, pad: 4 };
+    ? { l: 48, r: 18, t: 32, b: 52, pad: 2 }
+    : { l: 60, r: 28, t: 36, b: 56, pad: 4 };
 
   const mergedLayout: Partial<Plotly.Layout> = {
     autosize: true,
@@ -63,12 +63,12 @@ export const PlotlyChart: React.FC<PlotlyChartProps> = ({
     font: { 
       family: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif', 
       color: textColor, 
-      size: isSmallMobile ? 9 : isMobile ? 10 : 11 
+      size: isSmallMobile ? 11 : isMobile ? 12 : 13 
     },
     xaxis: {
       gridcolor: gridColor,
       zerolinecolor: zerolineColor,
-      tickfont: { color: textColor, size: isSmallMobile ? 8 : isMobile ? 9 : 10 },
+      tickfont: { color: textColor, size: isSmallMobile ? 10 : isMobile ? 11 : 12 },
       automargin: true,
       tickangle: isMobile ? -25 : undefined,
       ...layout.xaxis,
@@ -76,12 +76,12 @@ export const PlotlyChart: React.FC<PlotlyChartProps> = ({
     yaxis: {
       gridcolor: gridColor,
       zerolinecolor: zerolineColor,
-      tickfont: { color: textColor, size: isSmallMobile ? 8 : isMobile ? 9 : 10 },
+      tickfont: { color: textColor, size: isSmallMobile ? 10 : isMobile ? 11 : 12 },
       automargin: true,
       ...layout.yaxis,
     },
     legend: {
-      font: { color: textColor, size: isSmallMobile ? 8 : 9 },
+      font: { color: textColor, size: isSmallMobile ? 10 : isMobile ? 11 : 12 },
       orientation: isMobile ? 'h' : 'v',
       y: isMobile ? -0.25 : 1,
       x: isMobile ? 0 : 1.02,

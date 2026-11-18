@@ -50,6 +50,12 @@ async def lifespan(app: FastAPI):
     # Initialize database tables on startup
     Base.metadata.create_all(bind=engine)
     yield
+    # Clean up AI gateway HTTP client connection pools
+    try:
+        from app.ai.gateway import gemini_gateway
+        await gemini_gateway.aclose()
+    except Exception:
+        pass
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

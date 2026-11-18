@@ -327,6 +327,124 @@ class ApiClient {
     });
   }
 
+  async streamCopilotChat(
+    payload: {
+      message: string;
+      dataset_id?: string | null;
+      conversation_id?: string | null;
+      project_id?: string | null;
+    },
+    callbacks: {
+      onMetadata?: (meta: {
+        conversation_id?: string;
+        user_message_id?: string;
+        evidence?: Record<string, any>;
+        intent?: Record<string, any>;
+        suggested_actions?: string[];
+      }) => void;
+      onDelta?: (text: string) => void;
+      onDone?: (data: {
+        id?: string;
+        conversation_id?: string;
+        content: string;
+        evidence?: Record<string, any>;
+      }) => void;
+      onError?: (err: Error) => void;
+    },
+    signal?: AbortSignal
+  ): Promise<void> {
+    const url = `${API_BASE}/copilot/chat/stream`;
+    const currentToken = this.getToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    };
+    if (currentToken && currentToken !== 'null' && currentToken !== 'undefined') {
+      headers['Authorization'] = `Bearer ${currentToken}`;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal,
+      });
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      callbacks.onError?.(new Error(`Network error connecting to Aether stream: ${err.message}`));
+      return;
+    }
+
+    if (!response.ok) {
+      let errorMsg = `Streaming request failed with status ${response.status}`;
+      try {
+        const errorJson = await response.json();
+        if (errorJson.detail) {
+          errorMsg = typeof errorJson.detail === 'string' ? errorJson.detail : JSON.stringify(errorJson.detail);
+        } else if (errorJson.error?.message) {
+          errorMsg = errorJson.error.message;
+        }
+      } catch {
+        // fallback
+      }
+      callbacks.onError?.(new Error(errorMsg));
+      return;
+    }
+
+    if (!response.body) {
+      callbacks.onError?.(new Error('Streaming body not supported in current environment'));
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let currentEvent = 'message';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (trimmed.startsWith('event:')) {
+            currentEvent = trimmed.slice(6).trim();
+          } else if (trimmed.startsWith('data:')) {
+            const rawData = trimmed.slice(5).trim();
+            try {
+              const parsed = JSON.parse(rawData);
+              if (currentEvent === 'metadata') {
+                callbacks.onMetadata?.(parsed);
+              } else if (currentEvent === 'delta') {
+                callbacks.onDelta?.(parsed.text || '');
+              } else if (currentEvent === 'done') {
+                callbacks.onDone?.(parsed);
+              } else if (currentEvent === 'error') {
+                callbacks.onError?.(new Error(parsed.message || 'Stream error occurred'));
+              }
+            } catch {
+              // Ignore non-json lines
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      callbacks.onError?.(err);
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
   async getCopilotConversations(): Promise<{
     id: string;
     user_id: string;

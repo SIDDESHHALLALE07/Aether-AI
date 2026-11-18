@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useWorkspaceStore } from '../stores/useWorkspaceStore';
 import { Loader2, RefreshCw, AlertCircle, Sparkles, FileSpreadsheet, ChevronDown, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { api } from '../services/api';
 import type { 
   ChartRecommendation, 
@@ -10,6 +11,12 @@ import type {
   ChartConfig 
 } from '../types';
 import { PlotlyChart } from '../components/common/PlotlyChart';
+import { 
+  PageTransition, 
+  SkeletonChart, 
+  NoVisualizationsIllustration,
+  motionTokens 
+} from '../components/motion';
 
 const CHART_TYPES: { id: SupportedChartType; label: string; desc: string }[] = [
   { id: 'bar_vertical', label: 'Bar (Vertical)', desc: 'Categorical comparisons & counts' },
@@ -707,50 +714,53 @@ export const VisualizationsPage: React.FC = () => {
   // State: No dataset selected
   if (!activeDataset) {
     return (
-      <div className="max-w-4xl mx-auto space-y-4 min-w-0">
-        <h1 className="text-lg sm:text-xl font-semibold text-[#0F172A] tracking-tight">Visualizations</h1>
-        <div className="p-8 text-center bg-white border border-[#E2E8F0] rounded-xl space-y-3">
-          <FileSpreadsheet className="w-10 h-10 text-[#94A3B8] mx-auto mb-2" />
-          <h2 className="text-sm font-semibold text-[#0F172A]">No Dataset Selected</h2>
-          <p className="text-xs text-[#64748B] max-w-sm mx-auto">
-            {datasets.length === 0 
-              ? 'Please upload a dataset to begin generating analytical visualizations.' 
-              : 'Select one of your existing datasets below to render charts and statistical summaries.'}
-          </p>
-          {datasets.length > 0 ? (
-            <div className="pt-2 flex flex-wrap justify-center gap-2 max-w-md mx-auto">
-              {datasets.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => selectDataset(d)}
-                  className="bg-[#F8FAFC] hover:bg-[#EFF6FF] border border-[#CBD5E1] hover:border-[#2563EB] text-[#0F172A] hover:text-[#2563EB] text-xs font-medium px-3 py-1.5 rounded-md transition-colors touch-manipulation truncate max-w-[200px]"
-                >
-                  {d.original_filename}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <Link 
-              to="/datasets"
-              className="mt-2 inline-block bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-medium px-4 py-2 rounded-md transition-colors touch-manipulation"
-            >
-              Upload Dataset
-            </Link>
-          )}
+      <PageTransition>
+        <div className="max-w-4xl mx-auto space-y-4 min-w-0">
+          <h1 className="text-lg sm:text-xl font-semibold text-[#0F172A] dark:text-[#F8FAFC] tracking-tight">Visualizations</h1>
+          <div className="p-8 text-center bg-white dark:bg-[#111827] border border-[#E2E8F0] dark:border-white/10 rounded-xl space-y-3">
+            <NoVisualizationsIllustration className="w-24 h-24 mx-auto mb-2" />
+            <h2 className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">No Dataset Selected</h2>
+            <p className="text-xs text-[#64748B] dark:text-slate-400 max-w-sm mx-auto">
+              {datasets.length === 0 
+                ? 'Please upload a dataset to begin generating analytical visualizations.' 
+                : 'Select one of your existing datasets below to render charts and statistical summaries.'}
+            </p>
+            {datasets.length > 0 ? (
+              <div className="pt-2 flex flex-wrap justify-center gap-2 max-w-md mx-auto">
+                {datasets.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => selectDataset(d)}
+                    className="bg-[#F8FAFC] dark:bg-slate-800 hover:bg-[#EFF6FF] dark:hover:bg-blue-900/30 border border-[#CBD5E1] dark:border-white/10 hover:border-[#2563EB] dark:hover:border-blue-500 text-[#0F172A] dark:text-[#F8FAFC] hover:text-[#2563EB] dark:hover:text-blue-300 text-xs font-medium px-3 py-1.5 rounded-md transition-colors touch-manipulation truncate max-w-[200px] cursor-pointer"
+                  >
+                    {d.original_filename}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <Link 
+                to="/datasets"
+                className="mt-2 inline-block bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-medium px-4 py-2 rounded-md transition-colors touch-manipulation active:scale-[0.98]"
+              >
+                Upload Dataset
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      </PageTransition>
     );
   }
 
   const { data: plotlyData, layout: plotlyLayout } = getPlotlyDataAndLayout();
 
   return (
-    <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5 min-w-0">
+    <PageTransition>
+      <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 min-w-0">
       {/* Header & Dataset Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
         <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-[#0F172A] tracking-tight">Visualizations</h1>
-          <p className="text-xs text-[#64748B] mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] tracking-tight">Visualizations</h1>
+          <p className="text-xs sm:text-sm text-[#64748B] mt-1">
             Transform and render real-time statistical charts from your dataset.
           </p>
         </div>
@@ -759,18 +769,18 @@ export const VisualizationsPage: React.FC = () => {
         <div className="relative" ref={datasetDropdownRef}>
           <button
             onClick={() => setShowDatasetDropdown(!showDatasetDropdown)}
-            className="flex items-center space-x-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg px-3 py-1.5 text-xs text-[#0F172A] transition-colors touch-manipulation"
+            className="flex items-center space-x-2 bg-white hover:bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#0F172A] transition-colors touch-manipulation min-h-[44px] shadow-2xs"
             title="Switch Dataset"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-[#2563EB]" />
-            <span className="font-medium max-w-[160px] sm:max-w-[200px] truncate">{activeDataset.original_filename}</span>
-            <ChevronDown className={`w-3.5 h-3.5 text-[#94A3B8] transition-transform ${showDatasetDropdown ? 'rotate-180' : ''}`} />
+            <FileSpreadsheet className="w-4 h-4 text-[#2563EB]" />
+            <span className="font-medium max-w-[170px] sm:max-w-[220px] truncate">{activeDataset.original_filename}</span>
+            <ChevronDown className={`w-4 h-4 text-[#94A3B8] transition-transform ${showDatasetDropdown ? 'rotate-180' : ''}`} />
           </button>
 
           {showDatasetDropdown && (
-            <div className="absolute right-0 mt-1.5 w-72 bg-white border border-[#E2E8F0] rounded-lg shadow-lg p-1.5 z-50 text-xs">
-              <div className="px-2.5 py-1.5 border-b border-[#F1F5F9] font-semibold text-[#64748B]">Switch Dataset</div>
-              <div className="max-h-56 overflow-y-auto py-1 space-y-0.5">
+            <div className="absolute right-0 mt-2 w-80 bg-white border border-[#E2E8F0] rounded-xl shadow-lg p-2 z-50 text-xs sm:text-sm">
+              <div className="px-3 py-2 border-b border-[#F1F5F9] font-semibold text-[#64748B]">Switch Dataset</div>
+              <div className="max-h-60 overflow-y-auto py-1 space-y-1">
                 {datasets.map((d) => {
                   const isSelected = activeDataset.id === d.id;
                   return (
@@ -780,12 +790,12 @@ export const VisualizationsPage: React.FC = () => {
                         selectDataset(d);
                         setShowDatasetDropdown(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center justify-between transition-colors ${
+                      className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
                         isSelected ? 'bg-[#EFF6FF] text-[#2563EB] font-medium' : 'text-[#0F172A] hover:bg-[#F8FAFC]'
                       }`}
                     >
                       <span className="truncate mr-2">{d.original_filename}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#2563EB] flex-shrink-0" />}
+                      {isSelected && <Check className="w-4 h-4 text-[#2563EB] flex-shrink-0" />}
                     </button>
                   );
                 })}
@@ -797,20 +807,20 @@ export const VisualizationsPage: React.FC = () => {
 
       {/* Recommendations Chips */}
       {recommendations.length > 0 && !isLoadingMetadata && (
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-3 space-y-2">
-          <div className="flex items-center space-x-1.5 text-xs font-semibold text-[#0F172A]">
-            <Sparkles className="w-3.5 h-3.5 text-[#2563EB]" />
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 sm:p-5 space-y-2.5 shadow-2xs">
+          <div className="flex items-center space-x-2 text-xs sm:text-sm font-semibold text-[#0F172A]">
+            <Sparkles className="w-4 h-4 text-[#2563EB]" />
             <span>Recommended Visualizations</span>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+          <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
             {recommendations.map((rec, idx) => (
               <button
                 key={idx}
                 onClick={() => handleRenderRecommendation(rec)}
-                className="flex-shrink-0 flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:border-[#2563EB] text-xs text-[#0F172A] transition-colors touch-manipulation"
+                className="flex-shrink-0 flex items-center space-x-2 px-3.5 py-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-[#EFF6FF] hover:border-[#2563EB] text-xs sm:text-sm text-[#0F172A] transition-colors touch-manipulation min-h-[40px]"
                 title={rec.reason || rec.title}
               >
-                <span className="font-medium truncate max-w-[220px]">{rec.title}</span>
+                <span className="font-medium truncate max-w-[240px]">{rec.title}</span>
               </button>
             ))}
           </div>
@@ -1184,11 +1194,11 @@ export const VisualizationsPage: React.FC = () => {
               multiCols: selectedColumns
             })}
             disabled={isGeneratingChart || (selectedChartType !== 'heatmap' && !xColumn)}
-            className="w-full mt-2 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white font-medium text-xs py-2.5 rounded-lg transition-colors touch-manipulation flex items-center justify-center space-x-1.5"
+            className="w-full mt-3 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm py-3 rounded-xl transition-colors touch-manipulation flex items-center justify-center space-x-2 min-h-[46px] cursor-pointer shadow-2xs"
           >
             {isGeneratingChart ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Rendering...</span>
               </>
             ) : (
@@ -1198,14 +1208,14 @@ export const VisualizationsPage: React.FC = () => {
         </div>
 
         {/* Right Column: Visualization Canvas */}
-        <div className="lg:col-span-3 p-3.5 sm:p-5 rounded-xl bg-white border border-[#E2E8F0] flex flex-col justify-between min-h-[360px] sm:min-h-[440px] min-w-0">
+        <div className="lg:col-span-3 p-4 sm:p-6 rounded-2xl bg-white border border-[#E2E8F0] flex flex-col justify-between min-h-[440px] sm:min-h-[540px] min-w-0 shadow-xs">
           {/* Canvas Title Bar */}
-          <div className="flex justify-between items-center pb-2.5 border-b border-[#F1F5F9] mb-3 min-w-0 gap-2">
-            <h2 className="text-xs sm:text-sm font-semibold text-[#0F172A] truncate" title={chartTitle}>
+          <div className="flex justify-between items-center pb-3 border-b border-[#F1F5F9] mb-3.5 min-w-0 gap-3">
+            <h2 className="text-sm sm:text-base font-bold text-[#0F172A] truncate" title={chartTitle}>
               {chartTitle}
             </h2>
             {activeChartPayload && (
-              <span className="text-[11px] text-[#64748B] bg-[#F8FAFC] border border-[#E2E8F0] px-2 py-0.5 rounded-md flex-shrink-0">
+              <span className="text-xs text-[#64748B] bg-[#F8FAFC] border border-[#E2E8F0] px-2.5 py-1 rounded-lg flex-shrink-0 font-medium">
                 {CHART_TYPES.find(c => c.id === selectedChartType)?.label || selectedChartType}
               </span>
             )}
@@ -1214,12 +1224,11 @@ export const VisualizationsPage: React.FC = () => {
           {/* Canvas Content Body */}
           <div className="flex-1 flex items-center justify-center min-w-0 w-full">
             {isLoadingMetadata ? (
-              <div className="flex flex-col items-center justify-center py-16 space-y-2">
-                <Loader2 className="w-7 h-7 text-[#2563EB] animate-spin" />
-                <span className="text-xs text-[#64748B]">Loading dataset metadata & recommendations...</span>
+              <div className="w-full h-full flex items-center justify-center py-10">
+                <SkeletonChart height="h-96" className="w-full" />
               </div>
             ) : metaError ? (
-              <div className="p-6 text-center text-xs max-w-md space-y-3">
+              <div className="p-6 text-center text-xs sm:text-sm max-w-md space-y-3">
                 <AlertCircle className="w-8 h-8 text-[#DC2626] mx-auto" />
                 <p className="font-semibold text-[#991B1B]">{metaError}</p>
                 <button
@@ -1227,23 +1236,22 @@ export const VisualizationsPage: React.FC = () => {
                     lastActiveDatasetIdRef.current = null;
                     setIsLoadingMetadata(true);
                   }}
-                  className="inline-flex items-center space-x-1.5 bg-[#2563EB] text-white text-xs font-medium px-3.5 py-2 rounded-md hover:bg-[#1D4ED8] transition-colors touch-manipulation min-h-[38px]"
+                  className="inline-flex items-center space-x-1.5 bg-[#2563EB] text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#1D4ED8] transition-colors touch-manipulation min-h-[44px] active:scale-[0.98]"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className="w-4 h-4" />
                   <span>Retry Loading</span>
                 </button>
               </div>
             ) : isGeneratingChart ? (
-              <div className="flex flex-col items-center justify-center py-16 space-y-2">
-                <Loader2 className="w-7 h-7 text-[#2563EB] animate-spin" />
-                <span className="text-xs text-[#64748B]">Generating chart data...</span>
+              <div className="w-full h-full flex items-center justify-center py-10">
+                <SkeletonChart height="h-96" className="w-full" />
               </div>
             ) : chartError ? (
-              <div className="p-6 text-center text-xs max-w-md space-y-3 bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl">
-                <AlertCircle className="w-7 h-7 text-[#DC2626] mx-auto" />
+              <div className="p-6 text-center text-xs sm:text-sm max-w-md space-y-3 bg-[#FEF2F2] border border-[#FCA5A5] rounded-2xl">
+                <AlertCircle className="w-8 h-8 text-[#DC2626] mx-auto" />
                 <div>
                   <p className="font-semibold text-[#991B1B]">Unable to Render Visualization</p>
-                  <p className="text-[#7F1D1D] mt-1 text-[11px]">{chartError}</p>
+                  <p className="text-[#7F1D1D] mt-1 text-xs">{chartError}</p>
                 </div>
                 <button
                   onClick={() => executeGenerate({
@@ -1255,20 +1263,25 @@ export const VisualizationsPage: React.FC = () => {
                     binCount: bins,
                     multiCols: selectedColumns
                   })}
-                  className="inline-flex items-center space-x-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-medium px-3.5 py-2 rounded-md transition-colors touch-manipulation min-h-[38px]"
+                  className="inline-flex items-center space-x-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors touch-manipulation min-h-[44px] active:scale-[0.98]"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className="w-4 h-4" />
                   <span>Retry</span>
                 </button>
               </div>
             ) : plotlyData.length > 0 ? (
-              <div className="w-full h-[300px] xs:h-[340px] sm:h-[400px] md:h-[460px] min-w-0 overflow-hidden">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: motionTokens.duration.chart, ease: motionTokens.ease.out }}
+                className="w-full h-[340px] xs:h-[380px] sm:h-[460px] md:h-[520px] min-w-0 overflow-hidden"
+              >
                 <PlotlyChart
                   data={plotlyData as any}
                   layout={plotlyLayout as any}
                   style={{ width: '100%', height: '100%' }}
                 />
-              </div>
+              </motion.div>
             ) : (
               <div className="text-center py-16 text-[#64748B] text-xs space-y-2">
                 <FileSpreadsheet className="w-8 h-8 text-[#CBD5E1] mx-auto" />
@@ -1279,5 +1292,6 @@ export const VisualizationsPage: React.FC = () => {
         </div>
       </div>
     </div>
+  </PageTransition>
   );
 };
